@@ -5,10 +5,16 @@
 
 use super::generate_docs;
 use expect_test::expect;
+use qsc_data_structures::language_features::LanguageFeatures;
+use qsc_frontend::compile::TargetCapabilityFlags;
 
 #[test]
 fn docs_generation() {
-    let files = generate_docs();
+    let files = generate_docs(
+        None,
+        TargetCapabilityFlags::all(),
+        LanguageFeatures::default(),
+    );
     let (_, metadata, contents) = files
         .iter()
         .find(|(file_name, _, _)| &**file_name == "Microsoft.Quantum.Core/Length.md")

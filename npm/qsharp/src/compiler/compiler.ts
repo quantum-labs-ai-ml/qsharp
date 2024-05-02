@@ -85,7 +85,10 @@ export interface ICompiler {
     operation?: IOperationInfo,
   ): Promise<CircuitData>;
 
-  getDocumentation(): Promise<IDocFile[]>;
+  getDocumentation(
+    config: ProgramConfig,
+    target: TargetProfile,
+  ): Promise<IDocFile[]>;
 
   checkExerciseSolution(
     userCode: string,
@@ -249,8 +252,15 @@ export class Compiler implements ICompiler {
     );
   }
 
-  async getDocumentation(): Promise<IDocFile[]> {
-    return this.wasm.generate_docs();
+  async getDocumentation(
+    config: ProgramConfig,
+    target: TargetProfile,
+  ): Promise<IDocFile[]> {
+    return this.wasm.generate_docs(
+      config.sources,
+      target,
+      config.languageFeatures || [],
+    );
   }
 
   async checkExerciseSolution(

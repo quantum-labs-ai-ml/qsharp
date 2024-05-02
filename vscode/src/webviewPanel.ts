@@ -22,7 +22,8 @@ import { isQsharpDocument } from "./common";
 import { loadProject } from "./projectSystem";
 import { EventType, sendTelemetryEvent } from "./telemetry";
 import { getRandomGuid } from "./utils";
-import { showCircuitCommand, showDocumentationCommand } from "./circuit";
+import { showCircuitCommand } from "./circuit";
+import { showDocumentationCommand } from "./documentation";
 
 const QSharpWebViewType = "qsharp-webview";
 const compilerRunTimeoutMs = 1000 * 60 * 5; // 5 minutes

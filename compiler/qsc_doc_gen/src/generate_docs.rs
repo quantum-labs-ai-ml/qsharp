@@ -7,7 +7,8 @@ mod tests;
 use crate::display::{increase_header_level, parse_doc_for_summary};
 use crate::display::{CodeDisplay, Lookup};
 use qsc_ast::ast;
-use qsc_frontend::compile::{self, PackageStore, TargetCapabilityFlags};
+use qsc_data_structures::language_features::LanguageFeatures;
+use qsc_frontend::compile::{self, compile, PackageStore, SourceMap, TargetCapabilityFlags};
 use qsc_frontend::resolve;
 use qsc_hir::hir::{CallableKind, Item, ItemKind, Package, PackageId, Visibility};
 use qsc_hir::{hir, ty};
@@ -27,9 +28,28 @@ struct Compilation {
 
 impl Compilation {
     /// Creates a new `Compilation` by compiling sources.
-    pub(crate) fn new() -> Self {
+    pub(crate) fn new(
+        additional_sources: Option<SourceMap>,
+        capabilities: Option<TargetCapabilityFlags>,
+        language_features: Option<LanguageFeatures>,
+    ) -> Self {
         let mut package_store = PackageStore::new(compile::core());
-        package_store.insert(compile::std(&package_store, TargetCapabilityFlags::all()));
+        let caps = match capabilities { Some(a) => a, None => TargetCapabilityFlags.all() }
+        let std_unit = compile::std(&package_store, capabilities || d);
+        let std_package_id = package_store.insert(std_unit);
+
+        if let Some(sources) = additional_sources {
+            let unit = compile(
+                &package_store,
+                &[std_package_id],
+                sources,
+                capabilities,
+                language_features,
+            );
+            // TODO: Handle errors
+
+            package_store.insert(unit);
+        }
 
         Self { package_store }
     }
@@ -103,8 +123,12 @@ impl Lookup for Compilation {
 }
 
 #[must_use]
-pub fn generate_docs() -> Files {
-    let compilation = Compilation::new();
+pub fn generate_docs(
+    additional_sources: Option<SourceMap>,
+    capabilities: Option<TargetCapabilityFlags>,
+    language_features: Option<LanguageFeatures>,
+) -> Files {
+    let compilation = Compilation::new(additional_sources, capabilities, language_features);
     let mut files: Files = vec![];
 
     let display = &CodeDisplay {

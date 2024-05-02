@@ -1015,6 +1015,7 @@ version = "0.0.0"
 dependencies = [
  "expect-test",
  "qsc_ast",
+ "qsc_data_structures",
  "qsc_frontend",
  "qsc_hir",
  "regex-lite",

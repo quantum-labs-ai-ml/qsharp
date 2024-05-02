@@ -440,8 +440,25 @@ serializable_type! {
 
 #[wasm_bindgen]
 #[must_use]
-pub fn generate_docs() -> Vec<IDocFile> {
-    let docs = qsc_doc_gen::generate_docs::generate_docs();
+pub fn generate_docs(
+    sources: Vec<js_sys::Array>,
+    targetProfile: &str,
+    language_features: Vec<String>,
+) -> Vec<IDocFile> {
+    let sourceMap: Option<SourceMap> = if sources.len() > 0 {
+        Some(get_source_map(sources, &None))
+    } else {
+        None
+    };
+    let target_profile = Profile::from_str(targetProfile).expect("invalid target profile");
+    let language_features = LanguageFeatures::from_iter(language_features);
+
+    let docs = qsc_doc_gen::generate_docs::generate_docs(
+        sourceMap,
+        target_profile.into(),
+        language_features,
+    );
+
     let mut result: Vec<IDocFile> = vec![];
 
     for (name, metadata, contents) in docs {

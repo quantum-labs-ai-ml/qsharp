@@ -36,6 +36,8 @@ namespace Sample {
         return measurements;
     }
 
+    /// # Summary
+    /// This is PreparePhiPlus function
     operation PreparePhiPlus(register : Qubit[]) : Unit {
         ResetAll(register);             // |00〉
         H(register[0]);                 // |+0〉
