@@ -14,7 +14,7 @@ export default [
     { title: "Teleportation", file: "./algorithms/Teleportation.qs", shots: 1 },
     { title: "Random Bit", file: "./algorithms/RandomBit.qs", shots: 100 },
     { title: "Random Number Generator", file: "./algorithms/QRNGNISQ.qs", shots: 1000 },
-    { title: "Random Number Generator (Advanced)", file: "./algorithms/QRNG.qs", shots: 1000 },
+    { title: "Random Number Generator (Adaptive)", file: "./algorithms/QRNG.qs", shots: 1000 },
     { title: "Deutsch-Jozsa", file: "./algorithms/DeutschJozsaNISQ.qs", shots: 1 },
     { title: "Deutsch-Jozsa (Advanced)", file: "./algorithms/DeutschJozsa.qs", shots: 1 },
     { title: "Bernstein–Vazirani", file: "./algorithms/BernsteinVaziraniNISQ.qs", shots: 1 },
