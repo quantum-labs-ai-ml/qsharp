@@ -80,6 +80,64 @@ export async function activate(
   checkForOldQdk();
 
   context.subscriptions.push(
+    vscode.commands.registerCommand("qsharp-vscode.qdkCopilot", () => {
+      // Create and show a new webview
+      let panel = vscode.window.createWebviewPanel(
+        "qdkCopilot", // Identifies the type of the webview. Used internally
+        "QDK Copilot", // Title of the panel displayed to the user
+        vscode.ViewColumn.One, // Editor column to show the new webview panel in.
+        {}, // Webview options. More on these later.
+      );
+
+      panel.webview.html = `
+<math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+  <semantics>
+    <mrow>
+      <mfrac>
+        <mi>i</mi>
+        <msqrt>
+          <mn>2</mn>
+        </msqrt>
+      </mfrac>
+      <mo>⋅</mo>
+      <mrow>
+        <mo fence="true">[</mo>
+        <mtable rowspacing="0.16em" columnalign="center center" columnspacing="1em">
+          <mtr>
+            <mtd>
+              <mstyle scriptlevel="0" displaystyle="false">
+                <mn>1</mn>
+              </mstyle>
+            </mtd>
+            <mtd>
+              <mstyle scriptlevel="0" displaystyle="false">
+                <mn>0</mn>
+              </mstyle>
+            </mtd>
+          </mtr>
+          <mtr>
+            <mtd>
+              <mstyle scriptlevel="0" displaystyle="false">
+                <mn>0</mn>
+              </mstyle>
+            </mtd>
+            <mtd>
+              <mstyle scriptlevel="0" displaystyle="false">
+                <mn>1</mn>
+              </mstyle>
+            </mtd>
+          </mtr>
+        </mtable>
+        <mo fence="true">]</mo>
+      </mrow>
+    </mrow>
+    <annotation encoding="application/x-tex">{i \over \sqrt{2}} \cdot \begin{bmatrix}1 &amp; 0 \\ 0 &amp; 1\end{bmatrix}</annotation>
+  </semantics>
+</math>`;
+    }),
+  );
+
+  context.subscriptions.push(
     vscode.workspace.registerTextDocumentContentProvider(
       qsharpLibraryUriScheme,
       new QsTextDocumentContentProvider(),
