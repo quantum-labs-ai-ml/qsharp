@@ -82,60 +82,137 @@ export async function activate(
   context.subscriptions.push(
     vscode.commands.registerCommand("qsharp-vscode.qdkCopilot", () => {
       // Create and show a new webview
-      let panel = vscode.window.createWebviewPanel(
+      const panel = vscode.window.createWebviewPanel(
         "qdkCopilot", // Identifies the type of the webview. Used internally
         "QDK Copilot", // Title of the panel displayed to the user
         vscode.ViewColumn.One, // Editor column to show the new webview panel in.
-        {}, // Webview options. More on these later.
+        {
+          enableScripts: true, // Enable JavaScript in the webview
+        },
       );
 
+      // Set the HTML content for the webview
       panel.webview.html = `
-<math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
-  <semantics>
-    <mrow>
-      <mfrac>
-        <mi>i</mi>
-        <msqrt>
-          <mn>2</mn>
-        </msqrt>
-      </mfrac>
-      <mo>⋅</mo>
-      <mrow>
-        <mo fence="true">[</mo>
-        <mtable rowspacing="0.16em" columnalign="center center" columnspacing="1em">
-          <mtr>
-            <mtd>
-              <mstyle scriptlevel="0" displaystyle="false">
-                <mn>1</mn>
-              </mstyle>
-            </mtd>
-            <mtd>
-              <mstyle scriptlevel="0" displaystyle="false">
-                <mn>0</mn>
-              </mstyle>
-            </mtd>
-          </mtr>
-          <mtr>
-            <mtd>
-              <mstyle scriptlevel="0" displaystyle="false">
-                <mn>0</mn>
-              </mstyle>
-            </mtd>
-            <mtd>
-              <mstyle scriptlevel="0" displaystyle="false">
-                <mn>1</mn>
-              </mstyle>
-            </mtd>
-          </mtr>
-        </mtable>
-        <mo fence="true">]</mo>
-      </mrow>
-    </mrow>
-    <annotation encoding="application/x-tex">{i \over \sqrt{2}} \cdot \begin{bmatrix}1 &amp; 0 \\ 0 &amp; 1\end{bmatrix}</annotation>
-  </semantics>
-</math>`;
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>QDK Copilot</title>
+      <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    </head>
+    <body>
+      <h1>QDK Copilot</h1>
+      <input type="text" id="inputField" placeholder="Type something...">
+      <button id="submitButton">Submit</button>
+      <div id="output"></div>
+      <script>
+        const vscode = acquireVsCodeApi();
+        document.getElementById('submitButton').addEventListener('click', () => {
+          const inputValue = document.getElementById('inputField').value;
+          vscode.postMessage({
+            command: 'submit',
+            text: inputValue
+          });
+        });
+
+        window.addEventListener('message', event => {
+          const message = event.data;
+          switch (message.command) {
+            case 'display':
+              const outputDiv = document.getElementById('output');
+              const text = message.text;
+              const latexPattern = /\\$(.*?)\\$/g;
+              let html = text.replace(latexPattern, (match, p1) => {
+                return \`<span class="mathjax-latex">\\\\($\{p1}\\\\)</span>\`;
+              });
+              outputDiv.innerHTML = html;
+              MathJax.typesetPromise([outputDiv]).catch((err) => console.log(err.message));
+              break;
+          }
+        });
+      </script>
+    </body>
+    </html>
+  `;
+
+      // Handle messages from the webview
+      panel.webview.onDidReceiveMessage(
+        (message) => {
+          switch (message.command) {
+            case "submit":
+              panel.webview.postMessage({
+                command: "display",
+                text: message.text,
+              });
+              return;
+          }
+        },
+        undefined,
+        context.subscriptions,
+      );
     }),
   );
+
+  // context.subscriptions.push(
+  //   vscode.commands.registerCommand("qsharp-vscode.qdkCopilot", () => {
+  //     // Create and show a new webview
+  //     let panel = vscode.window.createWebviewPanel(
+  //       "qdkCopilot", // Identifies the type of the webview. Used internally
+  //       "QDK Copilot", // Title of the panel displayed to the user
+  //       vscode.ViewColumn.One, // Editor column to show the new webview panel in.
+  //       {}, // Webview options. More on these later.
+  //     );
+
+  //       panel.webview.html = `
+  // <math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+  //   <semantics>
+  //     <mrow>
+  //       <mfrac>
+  //         <mi>i</mi>
+  //         <msqrt>
+  //           <mn>2</mn>
+  //         </msqrt>
+  //       </mfrac>
+  //       <mo>⋅</mo>
+  //       <mrow>
+  //         <mo fence="true">[</mo>
+  //         <mtable rowspacing="0.16em" columnalign="center center" columnspacing="1em">
+  //           <mtr>
+  //             <mtd>
+  //               <mstyle scriptlevel="0" displaystyle="false">
+  //                 <mn>1</mn>
+  //               </mstyle>
+  //             </mtd>
+  //             <mtd>
+  //               <mstyle scriptlevel="0" displaystyle="false">
+  //                 <mn>0</mn>
+  //               </mstyle>
+  //             </mtd>
+  //           </mtr>
+  //           <mtr>
+  //             <mtd>
+  //               <mstyle scriptlevel="0" displaystyle="false">
+  //                 <mn>0</mn>
+  //               </mstyle>
+  //             </mtd>
+  //             <mtd>
+  //               <mstyle scriptlevel="0" displaystyle="false">
+  //                 <mn>1</mn>
+  //               </mstyle>
+  //             </mtd>
+  //           </mtr>
+  //         </mtable>
+  //         <mo fence="true">]</mo>
+  //       </mrow>
+  //     </mrow>
+  //     <annotation encoding="application/x-tex">{i \over \sqrt{2}} \cdot \begin{bmatrix}1 &amp; 0 \\ 0 &amp; 1\end{bmatrix}</annotation>
+  //   </semantics>
+  // </math>`;
+
+  //   }),
+  // );
 
   context.subscriptions.push(
     vscode.workspace.registerTextDocumentContentProvider(
