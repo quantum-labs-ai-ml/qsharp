@@ -93,51 +93,50 @@ export async function activate(
 
       // Set the HTML content for the webview
       panel.webview.html = `
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>QDK Copilot</title>
-      <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-      <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    </head>
-    <body>
-      <h1>QDK Copilot</h1>
-      <input type="text" id="inputField" placeholder="Type something...">
-      <button id="submitButton">Submit</button>
-      <div id="output"></div>
-      <script>
-        const vscode = acquireVsCodeApi();
-        document.getElementById('submitButton').addEventListener('click', () => {
-          const inputValue = document.getElementById('inputField').value;
-          vscode.postMessage({
-            command: 'submit',
-            text: inputValue
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QDK Copilot</title>
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+  <h1>QDK Copilot</h1>
+  <input type="text" id="inputField" placeholder="Type something...">
+  <button id="submitButton">Submit</button>
+  <div id="output"></div>
+  <script>
+    const vscode = acquireVsCodeApi();
+    document.getElementById('submitButton').addEventListener('click', () => {
+      const inputValue = document.getElementById('inputField').value;
+      vscode.postMessage({
+        command: 'submit',
+        text: inputValue
+      });
+    });
+
+    window.addEventListener('message', event => {
+      const message = event.data;
+      switch (message.command) {
+        case 'display':
+          const outputDiv = document.getElementById('output');
+          const text = message.text;
+          const latexPattern = /\\$(.*?)\\$/g;
+          let html = text.replace(latexPattern, (match, p1) => {
+            return \`<span class="mathjax-latex">\\\\($\{p1}\\\\)</span>\`;
           });
-        });
+          outputDiv.innerHTML = html;
+          MathJax.typesetPromise([outputDiv]).catch((err) => console.log(err.message));
+          break;
+      }
+    });
+  </script>
+</body>
+</html>
+`;
 
-        window.addEventListener('message', event => {
-          const message = event.data;
-          switch (message.command) {
-            case 'display':
-              const outputDiv = document.getElementById('output');
-              const text = message.text;
-              const latexPattern = /\\$(.*?)\\$/g;
-              let html = text.replace(latexPattern, (match, p1) => {
-                return \`<span class="mathjax-latex">\\\\($\{p1}\\\\)</span>\`;
-              });
-              outputDiv.innerHTML = html;
-              MathJax.typesetPromise([outputDiv]).catch((err) => console.log(err.message));
-              break;
-          }
-        });
-      </script>
-    </body>
-    </html>
-  `;
-
-      // Handle messages from the webview
       panel.webview.onDidReceiveMessage(
         (message) => {
           switch (message.command) {
