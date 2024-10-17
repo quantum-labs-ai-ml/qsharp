@@ -443,6 +443,14 @@ export function Editor(props: {
       </div>
       <div class="code-editor" ref={editorDiv}></div>
       <div class="button-row">
+        {props.showExpr ? (
+          <>
+            <span>Noise</span>
+            <input
+              style="width: 160px"
+            />
+          </>
+        ) : null}
         {props.kataSection ? null : (
           <>
             <span>Profile</span>

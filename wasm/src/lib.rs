@@ -20,8 +20,8 @@ use qsc::{
         CircuitEntryPoint,
     },
     target::Profile,
-    LanguageFeatures, PackageStore, PackageType, SourceContents, SourceMap, SourceName, SparseSim,
-    TargetCapabilityFlags,
+    LanguageFeatures, PackageStore, PackageType, SourceContents, SourceMap, SourceName,
+    SparseNoisySim, SparseSim, StateVectorNoisySim, TargetCapabilityFlags,
 };
 use resource_estimator::{self as re, estimate_entry};
 use serde::{Deserialize, Serialize};
@@ -355,7 +355,7 @@ where
     };
 
     for _ in 0..shots {
-        let result = interpreter.eval_entry_with_sim(&mut SparseSim::new(), &mut out);
+        let result = interpreter.eval_entry_with_sim(&mut StateVectorNoisySim::new(10), &mut out);
         let mut success = true;
         let msg: serde_json::Value = match result {
             Ok(value) => serde_json::Value::String(value.to_string()),
