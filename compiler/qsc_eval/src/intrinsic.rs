@@ -382,7 +382,7 @@ pub fn qubit_relabel(
 }
 
 /// Performs arbitrary permutation of object labels using label swap function.
-/// Upon completions an object labeled with ``original_labels``[i] will be labeled ``permuted_labels``[i].
+/// Upon completions an object labeled with ``original_labels[i]`` will be labeled ``permuted_labels[i]``.
 /// Transposition function swaps labels on objects identified by their labels.
 pub fn permutation_via_transpositions(
     original_labels: &[usize],          // Original placement of labels
@@ -396,7 +396,7 @@ pub fn permutation_via_transpositions(
         object_with_label.insert(label, i);
     }
 
-    // While we have more objects that need relabeling
+    // While we have more objects that may need relabeling
     while let Some((&label, &i)) = object_with_label.iter().next() {
         // Currently label is on object i. What is the desired label for it?
         let desired = permuted_labels[i];
