@@ -8,6 +8,7 @@ use crate::{
 use async_trait::async_trait;
 use futures::FutureExt;
 use miette::Diagnostic;
+use qsc_circuit::circ_to_qsharp::str_test;
 use qsc_data_structures::language_features::LanguageFeatures;
 use qsc_linter::LintConfig;
 use rustc_hash::FxHashMap;
@@ -220,8 +221,9 @@ pub trait FileSystemAsync {
             })?;
         let mut files = vec![];
         for item in filter_hidden_files(listing.into_iter()) {
+            let extension = item.entry_extension();
             match item.entry_type() {
-                Ok(EntryType::File) if item.entry_extension() == "qs" => files.push(item),
+                Ok(EntryType::File) if extension == "qs" || extension == "circ" => files.push(item),
                 Ok(EntryType::Folder) => {
                     files.append(&mut self.collect_project_sources_inner(&item.path()).await?);
                 }
@@ -356,10 +358,17 @@ pub trait FileSystemAsync {
 
         let mut sources = Vec::with_capacity(qs_files.len());
         for path in qs_files {
-            sources.push(self.read_file(&path).await.map_err(|e| Error::FileSystem {
-                about_path: path.to_string_lossy().to_string(),
-                error: e.to_string(),
-            })?);
+            let (name, mut contents) =
+                self.read_file(&path).await.map_err(|e| Error::FileSystem {
+                    about_path: path.to_string_lossy().to_string(),
+                    error: e.to_string(),
+                })?;
+            if let Some(ext) = path.extension() {
+                if ext == "circ" {
+                    contents = Arc::from(str_test(contents.to_string()));
+                }
+            }
+            sources.push((name, contents));
         }
 
         let mut dependencies = FxHashMap::default();
