@@ -51,6 +51,17 @@ qviz.draw(sampleCircuit, sampleDiv, qviz.STYLES["Default"]);
 
 Refer to the [`example`](./example) folder for an example on how to use quantum-viz.js. Notice that in order to open the contents of this folder in a browser you will need first to install from source (see [below](#running-from-source)).
 
+3. Enable extensions by:
+
+```js
+const sampleDiv = document.getElementById('sample');
+qviz.create(sampleCircuit)
+    .useDraggble() // drag and drop
+    .usePanel() // edit and add panel
+    .useOnCircuitChange(circuit => console.log(circuit)) // trigger when circuit changes
+    .draw(sampleDiv)
+```
+
 ## Python usage
 
 To use this package with Python, use [quantum-viz](/quantum-viz).

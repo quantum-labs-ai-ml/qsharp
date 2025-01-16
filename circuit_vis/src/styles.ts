@@ -1,86 +1,88 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 
+import { gateHeight, minGateWidth, panelMinHeight, panelWidth } from './constants';
+
 /**
  * Provides configuration for CSS styles of visualization.
  */
 export interface StyleConfig {
-  /** Line stroke style. */
-  lineStroke?: string;
-  /** Line width. */
-  lineWidth?: number;
-  /** Text colour. */
-  textColour?: string;
-  /** Single qubit unitary fill colour. */
-  unitary?: string;
-  /** Oplus circle fill colour. */
-  oplus?: string;
-  /** Measurement gate fill colour. */
-  measure?: string;
-  /** Measurement unknown primary colour. */
-  classicalUnknown?: string;
-  /** Measurement zero primary colour. */
-  classicalZero?: string;
-  /** Measurement one primary colour. */
-  classicalOne?: string;
-  /** Measurement zero text colour */
-  classicalZeroText?: string;
-  /** Measurement one text colour */
-  classicalOneText?: string;
+    /** Line stroke style. */
+    lineStroke?: string;
+    /** Line width. */
+    lineWidth?: number;
+    /** Text colour. */
+    textColour?: string;
+    /** Single qubit unitary fill colour. */
+    unitary?: string;
+    /** Oplus circle fill colour. */
+    oplus?: string;
+    /** Measurement gate fill colour. */
+    measure?: string;
+    /** Measurement unknown primary colour. */
+    classicalUnknown?: string;
+    /** Measurement zero primary colour. */
+    classicalZero?: string;
+    /** Measurement one primary colour. */
+    classicalOne?: string;
+    /** Measurement zero text colour */
+    classicalZeroText?: string;
+    /** Measurement one text colour */
+    classicalOneText?: string;
 }
 
 const defaultStyle: StyleConfig = {
-  lineStroke: "#000000",
-  lineWidth: 1,
-  textColour: "#000000",
-  unitary: "#D9F1FA",
-  oplus: "#FFFFFF",
-  measure: "#FFDE86",
-  classicalUnknown: "#E5E5E5",
-  classicalZero: "#C40000",
-  classicalOne: "#4059BD",
-  classicalZeroText: "#FFFFFF",
-  classicalOneText: "#FFFFFF",
+    lineStroke: '#000000',
+    lineWidth: 1,
+    textColour: '#000000',
+    unitary: '#D9F1FA',
+    oplus: '#FFFFFF',
+    measure: '#FFDE86',
+    classicalUnknown: '#E5E5E5',
+    classicalZero: '#C40000',
+    classicalOne: '#4059BD',
+    classicalZeroText: '#FFFFFF',
+    classicalOneText: '#FFFFFF',
 };
 
 const blackAndWhiteStyle: StyleConfig = {
-  lineStroke: "#000000",
-  lineWidth: 1,
-  textColour: "#000000",
-  unitary: "#FFFFFF",
-  oplus: "#FFFFFF",
-  measure: "#FFFFFF",
-  classicalUnknown: "#FFFFFF",
-  classicalZero: "#000000",
-  classicalOne: "#000000",
-  classicalZeroText: "#FFFFFF",
-  classicalOneText: "#FFFFFF",
+    lineStroke: '#000000',
+    lineWidth: 1,
+    textColour: '#000000',
+    unitary: '#FFFFFF',
+    oplus: '#FFFFFF',
+    measure: '#FFFFFF',
+    classicalUnknown: '#FFFFFF',
+    classicalZero: '#000000',
+    classicalOne: '#000000',
+    classicalZeroText: '#FFFFFF',
+    classicalOneText: '#FFFFFF',
 };
 
 const invertedStyle: StyleConfig = {
-  lineStroke: "#FFFFFF",
-  lineWidth: 1,
-  textColour: "#FFFFFF",
-  unitary: "#000000",
-  oplus: "#000000",
-  measure: "#000000",
-  classicalUnknown: "#000000",
-  classicalZero: "#FFFFFF",
-  classicalOne: "#FFFFFF",
-  classicalZeroText: "#000000",
-  classicalOneText: "#000000",
+    lineStroke: '#FFFFFF',
+    lineWidth: 1,
+    textColour: '#FFFFFF',
+    unitary: '#000000',
+    oplus: '#000000',
+    measure: '#000000',
+    classicalUnknown: '#000000',
+    classicalZero: '#FFFFFF',
+    classicalOne: '#FFFFFF',
+    classicalZeroText: '#000000',
+    classicalOneText: '#000000',
 };
 
 /**
  * Set of default styles.
  */
 export const STYLES: { [name: string]: StyleConfig } = {
-  /** Default style with coloured gates. */
-  Default: defaultStyle,
-  /** Black and white style. */
-  BlackAndWhite: blackAndWhiteStyle,
-  /** Inverted black and white style (for black backgrounds). */
-  Inverted: invertedStyle,
+    /** Default style with coloured gates. */
+    Default: defaultStyle,
+    /** Black and white style. */
+    BlackAndWhite: blackAndWhiteStyle,
+    /** Inverted black and white style (for black backgrounds). */
+    Inverted: invertedStyle,
 };
 
 /**
@@ -91,11 +93,13 @@ export const STYLES: { [name: string]: StyleConfig } = {
  * @returns String containing CSS style script.
  */
 export const style = (customStyle: StyleConfig = {}): string => {
-  const styleConfig = { ...defaultStyle, ...customStyle };
+    const styleConfig = { ...defaultStyle, ...customStyle };
 
-  return `${_defaultGates(styleConfig)}
+    return `${_defaultGates(styleConfig)}
     ${_classicallyControlledGates(styleConfig)}
-    ${_expandCollapse}`;
+    ${_expandCollapse}
+    ${_draggable}
+    ${_panel}`;
 };
 
 const _defaultGates = (styleConfig: StyleConfig): string => `
@@ -138,7 +142,7 @@ const _defaultGates = (styleConfig: StyleConfig): string => `
     }`;
 
 const _classicallyControlledGates = (styleConfig: StyleConfig): string => {
-  const gateOutline = `
+    const gateOutline = `
     .classically-controlled-one .classical-container,
     .classically-controlled-one .classical-line {
         stroke: ${styleConfig.classicalOne};
@@ -153,7 +157,7 @@ const _classicallyControlledGates = (styleConfig: StyleConfig): string => {
         fill: ${styleConfig.classicalZero};
         fill-opacity: 0.1;
     }`;
-  const controlBtn = `
+    const controlBtn = `
     .classically-controlled-btn {
         cursor: pointer;
     }
@@ -167,7 +171,7 @@ const _classicallyControlledGates = (styleConfig: StyleConfig): string => {
         fill: ${styleConfig.classicalZero};
     }`;
 
-  const controlBtnText = `
+    const controlBtnText = `
     .classically-controlled-btn text {
         dominant-baseline: middle;
         text-anchor: middle;
@@ -184,7 +188,7 @@ const _classicallyControlledGates = (styleConfig: StyleConfig): string => {
         fill: ${styleConfig.classicalZeroText};
     }`;
 
-  return `
+    return `
     .hidden {
         display: none;
     }
@@ -234,3 +238,72 @@ const _expandCollapse = `
         opacity: 1;
         transition: opacity 1s;
     }`;
+
+const _draggable = `
+        text {
+            user-select: none;
+            pointer-events: none;
+        }
+        .dropzone-layer {
+            display: none;
+        }
+        .dropzone {
+            fill-opacity: 0%;
+            stroke-opacity: 0%;
+        }
+        .dropzone:hover {
+            fill: #EC7063;
+            fill-opacity: 50%;
+        }
+        .grab {
+            cursor: grab;
+        }
+        .moving {
+            cursor: move;
+        }
+        .copying {
+            cursor: copy;
+        }
+        `;
+
+const _panel = `
+        .container {
+            display: flex;
+        }
+        .panel {
+            width: ${panelWidth}px;
+            border: solid 1px black;
+            padding: 8px;
+        }
+        .edit-panel {
+            display: flex;
+            flex-direction: column;
+        }
+        .title {
+            margin: 0 0 4px;
+            font-size: 1.2rem;
+            user-select: none;
+        }
+        .block {
+            display: block;
+        }
+        .target-input, .controls-input, .parameters-input {
+            margin-bottom: 8px;
+        }
+        .add-panel-gate {
+            width: 40px;
+            height: 40px;
+            border: 1px solid black;
+        }
+        .add-panel-svg {
+            width: ${panelWidth}px;
+            min-height: ${panelMinHeight}px;
+        }
+        .ghost {
+            width: ${minGateWidth}px;
+            height: ${gateHeight}px;
+            position: absolute;
+            z-index: 1;
+            pointer-events: none;
+        }
+    `;
