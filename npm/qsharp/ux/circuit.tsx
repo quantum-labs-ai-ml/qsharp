@@ -129,7 +129,7 @@ function ZoomableCircuit(props: { circuit: qviz.Circuit }) {
   }
 
   function renderCircuit(circuit: qviz.Circuit, container: HTMLDivElement) {
-    qviz.create(circuit).useDraggable().draw(container);
+    qviz.create(circuit).useDraggable().usePanel().draw(container);
 
     // quantum-viz hardcodes the styles in the SVG.
     // Remove the style elements -- we'll define the styles in our own CSS.

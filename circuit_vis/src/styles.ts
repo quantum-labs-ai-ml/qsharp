@@ -270,11 +270,6 @@ const _panel = `
         .container {
             display: flex;
         }
-        .panel {
-            width: ${panelWidth}px;
-            border: solid 1px black;
-            padding: 8px;
-        }
         .edit-panel {
             display: flex;
             flex-direction: column;

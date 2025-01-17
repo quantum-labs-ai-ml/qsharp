@@ -217,3 +217,8 @@ text {
 .copying {
   cursor: copy;
 }
+
+.panel {
+  display: flex;
+  flex-direction: row;
+}

@@ -280,11 +280,10 @@ const update = (action: Action, context: Context, useRefresh: () => void): void 
 const panel = (dispatch: Dispatch, context: Context, options?: PanelOptions): HTMLElement => {
     const panelElem = elem('div');
     panelElem.className = 'panel';
-    children(panelElem, [
-        context.addMode //
-            ? addPanel(dispatch, context, options)
-            : editPanel(dispatch, context),
-    ]);
+    children(panelElem, [addPanel(dispatch, context, options)]);
+    if (!context.addMode) {
+        children(panelElem, [editPanel(dispatch, context)]);
+    }
     return panelElem;
 };
 
@@ -324,7 +323,6 @@ const addPanel = (dispatch: Dispatch, context: Context, options?: PanelOptions):
 
     // Generate svg container to store gate elements
     const svgElem = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svgElem.classList.add('add-panel-svg');
     childrenSvg(svgElem, gateElems);
 
     // Generate add panel
@@ -710,10 +708,6 @@ const defaultGateDictionary: GateDictionary = {
     },
     Z: {
         gate: 'Z',
-        targets: [{ qId: 0 }],
-    },
-    ZZ: {
-        gate: 'ZZ',
         targets: [{ qId: 0 }],
     },
 };
