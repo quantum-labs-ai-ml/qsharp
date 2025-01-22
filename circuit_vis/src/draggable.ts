@@ -497,6 +497,7 @@ const _targets = (operation: Operation): Register[] | [] => {
     // i.e. [0, 1] -> [{qId: 0}, {qId: 1}]
     return uniqueQIds.map((qId) => ({
         qId,
+        type: 0,
     }));
 };
 

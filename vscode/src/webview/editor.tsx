@@ -114,12 +114,24 @@ function onMessage(event: any) {
   render(<App state={state} />, document.body);
 }
 
+function updateTextDocument(circuit: any) {
+  vscodeApi.postMessage({
+    command: "update",
+    text: JSON.stringify(circuit, null, 2),
+  });
+}
+
 function App({ state }: { state: State }) {
   switch (state.viewType) {
     case "loading":
       return <div>Loading...</div>;
     case "circuit":
-      return <CircuitPanel {...state.props}></CircuitPanel>;
+      return (
+        <CircuitPanel
+          {...state.props}
+          editCallback={updateTextDocument}
+        ></CircuitPanel>
+      );
     default:
       console.error("Unknown view type in state", state);
       return <div>Loading error</div>;

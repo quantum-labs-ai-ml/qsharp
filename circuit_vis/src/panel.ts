@@ -128,7 +128,7 @@ const addEvents = (dispatch: Dispatch, container: HTMLElement, sqore: Sqore): vo
                 const targetId = dropzoneElem.getAttribute('data-dropzone-id');
                 const targetWire = dropzoneElem.getAttribute('data-dropzone-wire');
                 dispatch({ type: 'ADD_OPERATION', payload: targetId });
-                dispatch({ type: 'TARGET', payload: [{ qId: parseInt(targetWire || '') }] });
+                dispatch({ type: 'TARGET', payload: [{ qId: parseInt(targetWire || ''), type: 0 }] });
             }
         }),
     );
@@ -457,7 +457,7 @@ const select = (
     children(divElem, [labelElem, selectElem]);
 
     selectElem.onchange = () => {
-        dispatch({ type: 'TARGET', payload: [{ qId: parseInt(selectElem.value) }] });
+        dispatch({ type: 'TARGET', payload: [{ qId: parseInt(selectElem.value), type: 0 }] });
     };
 
     return divElem;
@@ -514,6 +514,7 @@ const checkboxes = (
             // Generate new controls from checked options
             const newControls = checkedElems.map((elem) => ({
                 qId: parseInt(elem.value),
+                type: 0,
             }));
             // Dispatch new controls
             dispatch({ type: 'CONTROLS', payload: newControls });
@@ -676,39 +677,39 @@ interface GateDictionary {
 const defaultGateDictionary: GateDictionary = {
     RX: {
         gate: 'RX',
-        targets: [{ qId: 0 }],
+        targets: [{ qId: 0, type: 0 }],
     },
     RY: {
         gate: 'RY',
-        targets: [{ qId: 0 }],
+        targets: [{ qId: 0, type: 0 }],
     },
     RZ: {
         gate: 'RZ',
-        targets: [{ qId: 0 }],
+        targets: [{ qId: 0, type: 0 }],
     },
     H: {
         gate: 'H',
-        targets: [{ qId: 0 }],
+        targets: [{ qId: 0, type: 0 }],
     },
     X: {
         gate: 'X',
-        targets: [{ qId: 0 }],
+        targets: [{ qId: 0, type: 0 }],
     },
     S: {
         gate: 'S',
-        targets: [{ qId: 0 }],
+        targets: [{ qId: 0, type: 0 }],
     },
     T: {
         gate: 'T',
-        targets: [{ qId: 0 }],
+        targets: [{ qId: 0, type: 0 }],
     },
     Y: {
         gate: 'Y',
-        targets: [{ qId: 0 }],
+        targets: [{ qId: 0, type: 0 }],
     },
     Z: {
         gate: 'Z',
-        targets: [{ qId: 0 }],
+        targets: [{ qId: 0, type: 0 }],
     },
 };
 

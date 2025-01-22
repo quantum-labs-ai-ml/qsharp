@@ -127,10 +127,8 @@ export class Sqore {
         const svg: SVGElement = this.generateSvg(composedSqore);
         const previousSvg = container.querySelector('svg[id]');
         if (previousSvg == null) {
-            console.log('Appending child');
             container.appendChild(svg);
         } else {
-            console.log('Replacing child');
             container.replaceChild(svg, previousSvg);
         }
         this.addGateClickHandlers(container, _circuit);

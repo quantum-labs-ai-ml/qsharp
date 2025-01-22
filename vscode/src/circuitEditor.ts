@@ -26,13 +26,23 @@ export class CircuitEditorProvider implements vscode.CustomTextEditorProvider {
     token: vscode.CancellationToken,
   ): Promise<void> {
     log.info("Resolving CircuitEditorProvider");
-    console.log("Resolving CircuitEditorProvider");
 
     // Setup initial content for the webview
     webviewPanel.webview.options = {
       enableScripts: true,
     };
     webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview);
+
+    webviewPanel.webview.onDidReceiveMessage((e) => {
+      switch (e.command) {
+        case "alert":
+          vscode.window.showErrorMessage(e.text);
+          return;
+        case "update":
+          this.updateTextDocument(document, e.text);
+          return;
+      }
+    });
 
     const updateWebview = () => {
       const circuit = this.getDocumentAsJson(document);
@@ -53,30 +63,46 @@ export class CircuitEditorProvider implements vscode.CustomTextEditorProvider {
       webviewPanel.webview.postMessage(message);
     };
 
-    const changeDocumentSubscription = vscode.workspace.onDidChangeTextDocument(
-      (e) => {
-        if (e.document.uri.toString() === document.uri.toString()) {
-          updateWebview();
-        }
-      },
-    );
+    const updateTextDocument = (circuit: any) => {
+      const edit = new vscode.WorkspaceEdit();
+
+      console.log("Updating text document");
+
+      // Just replace the entire document every time for this example extension.
+      // A more complete extension should compute minimal edits instead.
+      // edit.replace(
+      //   document.uri,
+      //   new vscode.Range(0, 0, document.lineCount, 0),
+      //   JSON.stringify(circuit, null, 2),
+      // );
+
+      return vscode.workspace.applyEdit(edit);
+    };
+
+    // const changeDocumentSubscription = vscode.workspace.onDidChangeTextDocument(
+    //   (e) => {
+    //     if (e.document.uri.toString() === document.uri.toString()) {
+    //       updateWebview();
+    //     }
+    //   },
+    // );
 
     // Make sure we get rid of the listener when our editor is closed.
-    webviewPanel.onDidDispose(() => {
-      changeDocumentSubscription.dispose();
-    });
+    // webviewPanel.onDidDispose(() => {
+    //   changeDocumentSubscription.dispose();
+    // });
 
-    webviewPanel.webview.onDidReceiveMessage((e) => {
-      if (e.type === "add") {
-        const edit = new vscode.WorkspaceEdit();
-        edit.insert(
-          document.uri,
-          new vscode.Position(0, 0),
-          "Hello from circuitEditor.ts!\n",
-        );
-        vscode.workspace.applyEdit(edit);
-      }
-    });
+    // webviewPanel.webview.onDidReceiveMessage((e) => {
+    //   if (e.type === "add") {
+    //     const edit = new vscode.WorkspaceEdit();
+    //     edit.insert(
+    //       document.uri,
+    //       new vscode.Position(0, 0),
+    //       "Hello from circuitEditor.ts!\n",
+    //     );
+    //     vscode.workspace.applyEdit(edit);
+    //   }
+    // });
 
     updateWebview();
   }
@@ -168,7 +194,7 @@ export class CircuitEditorProvider implements vscode.CustomTextEditorProvider {
   /**
    * Write out the json to a given document.
    */
-  private updateTextDocument(document: vscode.TextDocument, json: any) {
+  private updateTextDocument(document: vscode.TextDocument, circuit: string) {
     const edit = new vscode.WorkspaceEdit();
 
     // Just replace the entire document every time for this example extension.
@@ -176,7 +202,7 @@ export class CircuitEditorProvider implements vscode.CustomTextEditorProvider {
     edit.replace(
       document.uri,
       new vscode.Range(0, 0, document.lineCount, 0),
-      JSON.stringify(json, null, 2),
+      circuit,
     );
 
     return vscode.workspace.applyEdit(edit);
