@@ -99,6 +99,7 @@ function onMessage(event: any) {
   switch (message.command) {
     case "circuit":
       {
+        console.log("Received circuit message");
         state = {
           viewType: "circuit",
           ...message,

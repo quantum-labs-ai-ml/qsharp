@@ -39,7 +39,7 @@ export class CircuitEditorProvider implements vscode.CustomTextEditorProvider {
           vscode.window.showErrorMessage(e.text);
           return;
         case "update":
-          //this.updateTextDocument(document, e.text);
+          this.updateTextDocument(document, e.text);
           return;
       }
     });
@@ -180,6 +180,11 @@ export class CircuitEditorProvider implements vscode.CustomTextEditorProvider {
    * Write out the json to a given document.
    */
   private updateTextDocument(document: vscode.TextDocument, circuit: string) {
+    // Short-circuit if there are no changes to be made.
+    if (circuit == document.getText()) {
+      return;
+    }
+
     const edit = new vscode.WorkspaceEdit();
 
     // Just replace the entire document every time for this example extension.
