@@ -84,10 +84,12 @@ function setThemeStylesheet() {
 }
 
 function main() {
+  console.log("New call of main");
   state = (vscodeApi.getState() as any) || loadingState;
   render(<App state={state} />, document.body);
   setThemeStylesheet();
-  vscodeApi.postMessage({ command: "ready" });
+  readFromTextDocument();
+  //vscodeApi.postMessage({ command: "ready" });
 }
 
 function onMessage(event: any) {
@@ -115,6 +117,10 @@ function onMessage(event: any) {
   render(<App state={state} />, document.body);
 }
 
+function readFromTextDocument() {
+  vscodeApi.postMessage({ command: "read" });
+}
+
 function updateTextDocument(circuit: any) {
   vscodeApi.postMessage({
     command: "update",
@@ -125,8 +131,10 @@ function updateTextDocument(circuit: any) {
 function App({ state }: { state: State }) {
   switch (state.viewType) {
     case "loading":
+      console.log("Loading");
       return <div>Loading...</div>;
     case "circuit":
+      console.log("Rendering circuit panel");
       return (
         <CircuitPanel
           {...state.props}

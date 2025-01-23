@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+import { update } from "lodash";
 import { log } from "qsharp-lang";
 // import { CircuitProps, CircuitData } from "qsharp-lang/ux";
 import * as vscode from "vscode";
@@ -41,6 +42,9 @@ export class CircuitEditorProvider implements vscode.CustomTextEditorProvider {
         case "update":
           this.updateTextDocument(document, e.text);
           return;
+        case "read":
+          updateWebview();
+          return;
       }
     });
 
@@ -77,19 +81,19 @@ export class CircuitEditorProvider implements vscode.CustomTextEditorProvider {
       changeDocumentSubscription.dispose();
     });
 
-    webviewPanel.webview.onDidReceiveMessage((e) => {
-      if (e.type === "add") {
-        const edit = new vscode.WorkspaceEdit();
-        edit.insert(
-          document.uri,
-          new vscode.Position(0, 0),
-          "Hello from circuitEditor.ts!\n",
-        );
-        vscode.workspace.applyEdit(edit);
-      }
-    });
+    // webviewPanel.webview.onDidReceiveMessage((e) => {
+    //   if (e.type === "add") {
+    //     const edit = new vscode.WorkspaceEdit();
+    //     edit.insert(
+    //       document.uri,
+    //       new vscode.Position(0, 0),
+    //       "Hello from circuitEditor.ts!\n",
+    //     );
+    //     vscode.workspace.applyEdit(edit);
+    //   }
+    // });
 
-    updateWebview();
+    //updateWebview();
   }
 
   private _getHtmlForWebview(webview: vscode.Webview): string {
