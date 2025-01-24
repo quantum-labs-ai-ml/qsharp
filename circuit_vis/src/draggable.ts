@@ -232,6 +232,10 @@ const _addDocumentEvents = (context: Context) => {
         if (ev.ctrlKey && context.selectedId) {
             container.classList.remove('moving');
             container.classList.add('copying');
+        } else if (ev.key == 'Delete' && id != null) {
+            console.log('Removing operation with data-id: ', id);
+            _removeOperation(id, context.operations);
+            context.renderFn();
         }
     });
 
@@ -256,6 +260,8 @@ const _addContextMenuEvent = (container: HTMLElement) => {
     });
 };
 
+let id: string | null = null;
+
 /**
  * Add all events
  */
@@ -279,6 +285,8 @@ const _addEvents = (context: Context) => {
             ev.stopPropagation();
             if (gateElem.getAttribute('data-expanded') !== 'true') {
                 context.selectedId = _equivDataId(elem);
+                id = context.selectedId;
+                console.log('Selecting operation with data-id: ', context.selectedId);
                 container.classList.add('moving');
                 dropzoneLayer.style.display = 'block';
             }
@@ -394,6 +402,21 @@ const _moveX = (sourceId: string, targetId: string, operations: Operation[]): Op
     sourceOperationParent.splice(indexToRemove, 1);
 
     return newSourceOperation;
+};
+
+/**
+ * Remove an operation
+ */
+const _removeOperation = (sourceId: string, operations: Operation[]) => {
+    const sourceOperation = _equivOperation(sourceId, operations);
+    const sourceOperationParent = _equivParentArray(sourceId, operations);
+
+    if (sourceOperation == null || sourceOperationParent == null) return null;
+
+    // Delete sourceOperation
+    sourceOperation.gate = 'removed';
+    const indexToRemove = sourceOperationParent.findIndex((operation) => operation.gate === 'removed');
+    sourceOperationParent.splice(indexToRemove, 1);
 };
 
 /**
