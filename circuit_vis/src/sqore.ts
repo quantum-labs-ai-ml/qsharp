@@ -109,7 +109,7 @@ export class Sqore {
         // Assign unique IDs to each operation
         _circuit.operations.forEach((op, i) => this.fillGateRegistry(op, i.toString()));
 
-        // Render operations at starting at given depth
+        // Render operations starting at given depth
         _circuit.operations = this.selectOpsAtDepth(_circuit.operations, renderDepth);
 
         // If only one top-level operation, expand automatically:
@@ -238,7 +238,7 @@ export class Sqore {
      * @param operations List of circuit operations.
      * @param renderDepth Initial layer depth at which to render gates.
      *
-     * @returns List of operations at or below specifed depth.
+     * @returns List of operations at or below specified depth.
      */
     private selectOpsAtDepth(operations: Operation[], renderDepth: number): Operation[] {
         if (renderDepth < 0) throw new Error(`Invalid renderDepth of ${renderDepth}. Needs to be >= 0.`);

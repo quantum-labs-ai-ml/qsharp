@@ -143,7 +143,7 @@ const _dropzoneLayer = (context: Context) => {
         if (wirePrefix) {
             const { prefixX } = wirePrefix;
             const elemDropzone = box(prefixX, cY - paddingY, cX - prefixX, paddingY * 2, 'dropzone');
-            elemDropzone.setAttribute('data-dropzone-id', _equivDataId(elem) || '');
+            elemDropzone.setAttribute('data-dropzone-id', _findDataId(elem) || '');
             elemDropzone.setAttribute('data-dropzone-wire', `${wirePrefix.index}`);
 
             wirePrefix.prefixX = cX;
@@ -159,7 +159,7 @@ const _dropzoneLayer = (context: Context) => {
                 if (wirePrefix) {
                     const { prefixX } = wirePrefix;
                     const elemDropzone = box(prefixX, wireY - paddingY, x - prefixX, paddingY * 2, 'dropzone');
-                    elemDropzone.setAttribute('data-dropzone-id', _equivDataId(elem) || '');
+                    elemDropzone.setAttribute('data-dropzone-id', _findDataId(elem) || '');
                     elemDropzone.setAttribute('data-dropzone-wire', `${wirePrefix.index}`);
 
                     wirePrefix.prefixX = x;
@@ -203,15 +203,15 @@ const _wireData = (container: HTMLElement): number[] => {
 /**
  * Find equivalent gate element of host element
  */
-const _equivGateElem = (elem: SVGElement): SVGElement | null => {
+const _findGateElem = (elem: SVGElement): SVGElement | null => {
     return elem.closest<SVGElement>('[data-id]');
 };
 
 /**
  * Find data-id of host element
  */
-const _equivDataId = (elem: SVGElement) => {
-    const gateElem = _equivGateElem(elem);
+const _findDataId = (elem: SVGElement) => {
+    const gateElem = _findGateElem(elem);
     return gateElem != null ? gateElem.getAttribute('data-id') : null;
 };
 
@@ -276,17 +276,17 @@ const _addEvents = (context: Context) => {
     // Host element events
     const elems = _hostElems(container);
     elems.forEach((elem) => {
+        elem.setAttribute('draggable', 'true');
         elem.addEventListener('mousedown', () => {
             context.selectedWire = elem.getAttribute('data-wire');
         });
 
-        const gateElem = _equivGateElem(elem);
+        const gateElem = _findGateElem(elem);
         gateElem?.addEventListener('mousedown', (ev: MouseEvent) => {
             ev.stopPropagation();
             if (gateElem.getAttribute('data-expanded') !== 'true') {
-                context.selectedId = _equivDataId(elem);
+                context.selectedId = _findDataId(elem);
                 id = context.selectedId;
-                console.log('Selecting operation with data-id: ', context.selectedId);
                 container.classList.add('moving');
                 dropzoneLayer.style.display = 'block';
             }
@@ -297,6 +297,7 @@ const _addEvents = (context: Context) => {
     const dropzoneElems = dropzoneLayer.querySelectorAll<SVGRectElement>('.dropzone');
     dropzoneElems.forEach((dropzoneElem) => {
         dropzoneElem.addEventListener('mouseup', (ev: MouseEvent) => {
+            console.log('dropzone mouseup from draggable.ts');
             const originalOperations = cloneDeep(operations);
             const targetId = dropzoneElem.getAttribute('data-dropzone-id');
             const targetWire = dropzoneElem.getAttribute('data-dropzone-wire');
@@ -314,7 +315,7 @@ const _addEvents = (context: Context) => {
 
             if (newSourceOperation != null) {
                 _moveY(context.selectedWire, targetWire, newSourceOperation, context.wireData.length);
-                const parentOperation = _equivParentOperation(context.selectedId, operations);
+                const parentOperation = _findParentOperation(context.selectedId, operations);
                 if (parentOperation != null) {
                     parentOperation.targets = _targets(parentOperation);
                 }
@@ -324,7 +325,7 @@ const _addEvents = (context: Context) => {
     });
 };
 
-const _equivParentOperation = (dataId: string | null, operations: Operation[]): Operation | null => {
+const _findParentOperation = (dataId: string | null, operations: Operation[]): Operation | null => {
     if (!dataId) return null;
 
     const indexes = _indexes(dataId);
@@ -341,13 +342,13 @@ const _equivParentOperation = (dataId: string | null, operations: Operation[]): 
 };
 
 /**
- * Find equivalent parent array of an operation
+ * Find the parent array of an operation based on its data-id
  */
-const _equivParentArray = (dataId: string | null, operations: Operation[]): Operation[] | null => {
+const _findParentArray = (dataId: string | null, operations: Operation[]): Operation[] | null => {
     if (!dataId) return null;
 
     const indexes = _indexes(dataId);
-    indexes.pop();
+    indexes.pop(); // The last index refers to the operation itself, remove it so that the last index instead refers to the parent operation
 
     let parentArray = operations;
     for (const index of indexes) {
@@ -357,13 +358,13 @@ const _equivParentArray = (dataId: string | null, operations: Operation[]): Oper
 };
 
 /**
- * Find an equivalent operation of an element based on its data-id
+ * Find an operation based on its data-id from a list of operations
  */
-const _equivOperation = (dataId: string | null, operations: Operation[]): Operation | null => {
+const _findOperation = (dataId: string | null, operations: Operation[]): Operation | null => {
     if (!dataId) return null;
 
     const index = _lastIndex(dataId);
-    const operationParent = _equivParentArray(dataId, operations);
+    const operationParent = _findParentArray(dataId, operations);
 
     if (
         operationParent == null || //
@@ -378,10 +379,10 @@ const _equivOperation = (dataId: string | null, operations: Operation[]): Operat
  * Move an operation horizontally
  */
 const _moveX = (sourceId: string, targetId: string, operations: Operation[]): Operation | null => {
-    if (sourceId === targetId) return _equivOperation(sourceId, operations);
-    const sourceOperation = _equivOperation(sourceId, operations);
-    const sourceOperationParent = _equivParentArray(sourceId, operations);
-    const targetOperationParent = _equivParentArray(targetId, operations);
+    const sourceOperation = _findOperation(sourceId, operations);
+    if (sourceId === targetId) return sourceOperation;
+    const sourceOperationParent = _findParentArray(sourceId, operations);
+    const targetOperationParent = _findParentArray(targetId, operations);
     const targetLastIndex = _lastIndex(targetId);
 
     if (
@@ -399,6 +400,10 @@ const _moveX = (sourceId: string, targetId: string, operations: Operation[]): Op
     // Delete sourceOperation
     sourceOperation.gate = 'removed';
     const indexToRemove = sourceOperationParent.findIndex((operation) => operation.gate === 'removed');
+    if (indexToRemove == -1) {
+        console.error("'removed' operation not found in parent array");
+        return null;
+    }
     sourceOperationParent.splice(indexToRemove, 1);
 
     return newSourceOperation;
@@ -408,8 +413,8 @@ const _moveX = (sourceId: string, targetId: string, operations: Operation[]): Op
  * Remove an operation
  */
 const _removeOperation = (sourceId: string, operations: Operation[]) => {
-    const sourceOperation = _equivOperation(sourceId, operations);
-    const sourceOperationParent = _equivParentArray(sourceId, operations);
+    const sourceOperation = _findOperation(sourceId, operations);
+    const sourceOperationParent = _findParentArray(sourceId, operations);
 
     if (sourceOperation == null || sourceOperationParent == null) return null;
 
@@ -423,9 +428,9 @@ const _removeOperation = (sourceId: string, operations: Operation[]) => {
  * Copy an operation horizontally
  */
 const _copyX = (sourceId: string, targetId: string, operations: Operation[]): Operation | null => {
-    const sourceOperation = _equivOperation(sourceId, operations);
-    const sourceOperationParent = _equivParentArray(sourceId, operations);
-    const targetOperationParent = _equivParentArray(targetId, operations);
+    const sourceOperation = _findOperation(sourceId, operations);
+    const sourceOperationParent = _findParentArray(sourceId, operations);
+    const targetOperationParent = _findParentArray(targetId, operations);
     const targetLastIndex = _lastIndex(targetId);
 
     if (
@@ -557,10 +562,10 @@ const exportedForTesting = {
     _wirePrefixes,
     _center,
     _wireData,
-    _equivGateElem,
-    _equivOperation,
-    _equivParentOperation,
-    _equivParentArray,
+    _equivGateElem: _findGateElem,
+    _equivOperation: _findOperation,
+    _equivParentOperation: _findParentOperation,
+    _equivParentArray: _findParentArray,
     _moveX,
     _copyX,
     _moveY,
@@ -574,9 +579,9 @@ const exportedForTesting = {
 export {
     extensionDraggable,
     Context,
-    _equivOperation,
-    _equivGateElem,
-    _equivParentArray,
+    _findOperation,
+    _findGateElem,
+    _findParentArray,
     _lastIndex,
     _offsetRecursively,
     exportedForTesting,

@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 import { Circuit } from "@microsoft/quantum-viz.js/lib";
+import * as qviz from "@microsoft/quantum-viz.js/lib";
 
 const svgWidth = 800;
 const svgHeight = 600;
@@ -285,12 +286,12 @@ class CircuitPlaceholder extends CircuitDraggable {
   }
 }
 
-class CircuitDesigner {
+export class CircuitDesigner {
   public canvas: SVGSVGElement;
   private gateList: GateEntry[];
   private placeholder: CircuitPlaceholder;
 
-  constructor(parent: HTMLElement, gates: GateEntry[]) {
+  constructor(parent: HTMLElement, circuit: qviz.Circuit) {
     this.canvas = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     setAttributes(this.canvas, {
       width: `${svgWidth}`,
@@ -312,7 +313,7 @@ class CircuitDesigner {
     appendChildren(this.canvas, [circuitBackground, this.placeholder.domNode]);
 
     parent.appendChild(this.canvas);
-    this.gateList = gates || [];
+    this.gateList = gateList || [];
     this.renderCircuit();
   }
 
@@ -376,7 +377,7 @@ class CircuitDesigner {
     // TODO: If not on a drop zone, remove the placeholder
     // TODO: Handle when dragging off the canvas to delete
 
-    // See if we've over the qubit lines, and if so, show the drop zone
+    // See if we're over the qubit lines, and if so, show the drop zone
     if (point.x < getGateX(0) || point.x > getGateXMax()) return;
 
     // TODO: Num of qubits should be dynamic
@@ -480,9 +481,9 @@ const gateList: GateEntry[] = [
   { gate: "CX", step: 1, qubits: [3, 0] },
 ];
 
-document.addEventListener("DOMContentLoaded", () => {
-  const designer = new CircuitDesigner(document.body, gateList);
-});
+// document.addEventListener("DOMContentLoaded", () => {
+//   const designer = new CircuitDesigner(document.body, gateList);
+// });
 
 // **** Communicating with the host extension ****
 
