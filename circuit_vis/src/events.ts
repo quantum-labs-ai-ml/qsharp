@@ -77,7 +77,7 @@ class CircuitEvents {
             if (ev.ctrlKey && selectedLocation) {
                 this.container.classList.remove('moving');
                 this.container.classList.add('copying');
-            } else if (ev.key == 'Delete' && selectedLocation != null) {
+            } else if (ev.key == 'Delete' && selectedLocation) {
                 this._removeOperation(selectedLocation);
                 this.renderFn();
             }
@@ -181,18 +181,18 @@ class CircuitEvents {
                 if (sourceLocation == null) {
                     // Add a new operation from the toolbox
                     const newOperation = this._addOperation(this.selectedOperation, targetLoc);
-                    if (newOperation != null) {
+                    if (newOperation) {
                         this._addY(targetWire, newOperation, this.wireData.length);
                     }
-                } else if (sourceLocation != null && this.selectedWire != null) {
+                } else if (sourceLocation && this.selectedWire) {
                     const newOperation = ev.ctrlKey
                         ? this._addOperation(this.selectedOperation, targetLoc)
                         : this._moveX(sourceLocation, targetLoc);
 
-                    if (newOperation != null) {
+                    if (newOperation) {
                         this._moveY(this.selectedWire, targetWire, newOperation, this.wireData.length);
                         const parentOperation = this._findParentOperation(sourceLocation);
-                        if (parentOperation != null) {
+                        if (parentOperation) {
                             parentOperation.targets = this._targets(parentOperation);
                         }
                     }
@@ -425,7 +425,7 @@ class CircuitEvents {
      */
     _offsetRecursively(operation: Operation, wireOffset: number, totalWires: number): Operation {
         // Offset all targets by offsetY value
-        if (operation.targets != null) {
+        if (operation.targets) {
             operation.targets.forEach((target) => {
                 target.qId = this._circularMod(target.qId, wireOffset, totalWires);
                 if (target.cId) target.cId = this._circularMod(target.cId, wireOffset, totalWires);
@@ -433,7 +433,7 @@ class CircuitEvents {
         }
 
         // Offset all controls by offsetY value
-        if (operation.controls != null) {
+        if (operation.controls) {
             operation.controls.forEach((control) => {
                 control.qId = this._circularMod(control.qId, wireOffset, totalWires);
                 if (control.cId) control.cId = this._circularMod(control.qId, wireOffset, totalWires);
@@ -441,7 +441,7 @@ class CircuitEvents {
         }
 
         // Offset recursively through all children
-        if (operation.children != null) {
+        if (operation.children) {
             operation.children.forEach((child) => this._offsetRecursively(child, wireOffset, totalWires));
         }
 
