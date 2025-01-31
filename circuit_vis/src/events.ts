@@ -27,7 +27,6 @@ class CircuitEvents {
     private wireData: number[];
     private renderFn: () => void;
     private selectedOperation: Operation | null;
-    private selectedLocation: string | null;
     private selectedWire: string | null;
 
     constructor(container: HTMLElement, sqore: Sqore, useRefresh: () => void) {
@@ -38,7 +37,6 @@ class CircuitEvents {
         this.wireData = this._wireData();
         this.renderFn = useRefresh;
         this.selectedOperation = null;
-        this.selectedLocation = null;
         this.selectedWire = null;
     }
 
@@ -75,22 +73,19 @@ class CircuitEvents {
      */
     _addDocumentEvents() {
         document.addEventListener('keydown', (ev: KeyboardEvent) => {
-            if (ev.ctrlKey && this.selectedLocation) {
+            const selectedLocation = this.selectedOperation ? this._getLocation(this.selectedOperation) : null;
+            if (ev.ctrlKey && selectedLocation) {
                 this.container.classList.remove('moving');
                 this.container.classList.add('copying');
-            } else if (ev.key == 'Delete') {
-                if (this.selectedLocation != null) {
-                    console.log('Removing operation with location: ', this.selectedLocation);
-                    this._removeOperation(this.selectedLocation);
-                    this.renderFn();
-                } else {
-                    console.log('No operation selected');
-                }
+            } else if (ev.key == 'Delete' && selectedLocation != null) {
+                this._removeOperation(selectedLocation);
+                this.renderFn();
             }
         });
 
         document.addEventListener('keyup', (ev: KeyboardEvent) => {
-            if (ev.ctrlKey && this.selectedLocation) {
+            const selectedLocation = this.selectedOperation ? this._getLocation(this.selectedOperation) : null;
+            if (ev.ctrlKey && selectedLocation) {
                 this.container.classList.remove('copying');
                 this.container.classList.add('moving');
             }
@@ -124,8 +119,16 @@ class CircuitEvents {
             gateElem?.addEventListener('mousedown', (ev: MouseEvent) => {
                 ev.stopPropagation();
                 if (gateElem.getAttribute('data-expanded') !== 'true') {
-                    this.selectedLocation = gateElem.getAttribute('data-location');
-                    this.selectedOperation = this._findOperation(this.selectedLocation);
+                    const selectedLocation = gateElem.getAttribute('data-location');
+                    this.selectedOperation = this._findOperation(selectedLocation);
+                    // ToDo: This shouldn't be necessary. Find out why all the operations are missing their dataAttributes from sqore
+                    if (this.selectedOperation && selectedLocation) {
+                        if (this.selectedOperation.dataAttributes == null) {
+                            this.selectedOperation.dataAttributes = { location: selectedLocation };
+                        } else {
+                            this.selectedOperation.dataAttributes['location'] = selectedLocation;
+                        }
+                    }
                     this.container.classList.add('moving');
                     this.dropzoneLayer.style.display = 'block';
                 }
@@ -172,44 +175,30 @@ class CircuitEvents {
                 const targetLoc = dropzoneElem.getAttribute('data-dropzone-location');
                 const targetWire = dropzoneElem.getAttribute('data-dropzone-wire');
 
-                // Add a new operation from the toolbox
-                if (
-                    this.selectedLocation == null &&
-                    this.selectedOperation !== null &&
-                    targetLoc !== null &&
-                    targetWire !== null
-                ) {
+                if (targetLoc == null || targetWire == null || this.selectedOperation == null) return;
+                const sourceLocation = this._getLocation(this.selectedOperation);
+
+                if (sourceLocation == null) {
+                    // Add a new operation from the toolbox
                     const newOperation = this._addOperation(this.selectedOperation, targetLoc);
                     if (newOperation != null) {
                         this._addY(targetWire, newOperation, this.wireData.length);
                     }
-                    this.selectedOperation = null;
-                    if (isEqual(originalOperations, this.operations) === false) this.renderFn();
-                    return;
-                }
+                } else if (sourceLocation != null && this.selectedWire != null) {
+                    const newOperation = ev.ctrlKey
+                        ? this._addOperation(this.selectedOperation, targetLoc)
+                        : this._moveX(sourceLocation, targetLoc);
 
-                if (
-                    targetLoc == null ||
-                    targetWire == null ||
-                    this.selectedOperation == null ||
-                    this.selectedLocation == null ||
-                    this.selectedWire == null
-                )
-                    return;
-
-                const newSourceOperation = ev.ctrlKey
-                    ? this._copyX(this.selectedLocation, targetLoc)
-                    : this._moveX(this.selectedLocation, targetLoc);
-
-                if (newSourceOperation != null) {
-                    this._moveY(this.selectedWire, targetWire, newSourceOperation, this.wireData.length);
-                    const parentOperation = this._findParentOperation(this.selectedLocation);
-                    if (parentOperation != null) {
-                        parentOperation.targets = this._targets(parentOperation);
+                    if (newOperation != null) {
+                        this._moveY(this.selectedWire, targetWire, newOperation, this.wireData.length);
+                        const parentOperation = this._findParentOperation(sourceLocation);
+                        if (parentOperation != null) {
+                            parentOperation.targets = this._targets(parentOperation);
+                        }
                     }
                 }
 
-                this.selectedLocation = null;
+                this.selectedWire = null;
                 this.selectedOperation = null;
 
                 if (isEqual(originalOperations, this.operations) === false) this.renderFn();
@@ -280,11 +269,7 @@ class CircuitEvents {
         const index = this._lastIndex(location);
         const operationParent = this._findParentArray(location);
 
-        if (
-            operationParent == null || //
-            index == null
-        )
-            return null;
+        if (operationParent == null || index == null) return null;
 
         return operationParent[index];
     }
@@ -408,6 +393,14 @@ class CircuitEvents {
     /*****************
      *     Misc.     *
      *****************/
+
+    /**
+     * Gets the location of an operation, if it has one
+     */
+    _getLocation(operation: Operation): string | null {
+        if (operation.dataAttributes == null) return null;
+        return operation.dataAttributes['location'];
+    }
 
     /**
      * Get list of toolbox items
