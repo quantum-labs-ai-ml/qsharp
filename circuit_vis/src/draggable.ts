@@ -115,7 +115,7 @@ const _center = (elem: SVGGraphicsElement): { cX: number; cY: number } => {
 };
 
 /**
- * Create dropzone layer with all dropzones popullated
+ * Create dropzone layer with all dropzones populated
  */
 const _dropzoneLayer = (context: Context) => {
     const dropzoneLayer = document.createElementNS('http://www.w3.org/2000/svg', 'g');
@@ -143,7 +143,7 @@ const _dropzoneLayer = (context: Context) => {
         if (wirePrefix) {
             const { prefixX } = wirePrefix;
             const elemDropzone = box(prefixX, cY - paddingY, cX - prefixX, paddingY * 2, 'dropzone');
-            elemDropzone.setAttribute('data-dropzone-id', _findDataId(elem) || '');
+            elemDropzone.setAttribute('data-dropzone-location', _findLocation(elem) || '');
             elemDropzone.setAttribute('data-dropzone-wire', `${wirePrefix.index}`);
 
             wirePrefix.prefixX = cX;
@@ -159,7 +159,7 @@ const _dropzoneLayer = (context: Context) => {
                 if (wirePrefix) {
                     const { prefixX } = wirePrefix;
                     const elemDropzone = box(prefixX, wireY - paddingY, x - prefixX, paddingY * 2, 'dropzone');
-                    elemDropzone.setAttribute('data-dropzone-id', _findDataId(elem) || '');
+                    elemDropzone.setAttribute('data-dropzone-location', _findLocation(elem) || '');
                     elemDropzone.setAttribute('data-dropzone-wire', `${wirePrefix.index}`);
 
                     wirePrefix.prefixX = x;
@@ -174,7 +174,7 @@ const _dropzoneLayer = (context: Context) => {
     wirePrefixes.map(({ wireY, prefixX }) => {
         const maxWidth = Number(svg.getAttribute('width'));
         const elemDropzone = box(prefixX, wireY - paddingY, maxWidth - prefixX, paddingY * 2, 'dropzone');
-        elemDropzone.setAttribute('data-dropzone-id', `${operations.length}`);
+        elemDropzone.setAttribute('data-dropzone-location', `${operations.length}`);
         const index = wireData.findIndex((item) => item === wireY);
         elemDropzone.setAttribute('data-dropzone-wire', `${index}`);
         dropzoneLayer.appendChild(elemDropzone);
@@ -204,15 +204,15 @@ const _wireData = (container: HTMLElement): number[] => {
  * Find equivalent gate element of host element
  */
 const _findGateElem = (elem: SVGElement): SVGElement | null => {
-    return elem.closest<SVGElement>('[data-id]');
+    return elem.closest<SVGElement>('[data-location]');
 };
 
 /**
- * Find data-id of host element
+ * Find location of host element
  */
-const _findDataId = (elem: SVGElement) => {
+const _findLocation = (elem: SVGElement) => {
     const gateElem = _findGateElem(elem);
-    return gateElem != null ? gateElem.getAttribute('data-id') : null;
+    return gateElem != null ? gateElem.getAttribute('data-location') : null;
 };
 
 /**
@@ -284,7 +284,7 @@ const _addEvents = (context: Context) => {
         gateElem?.addEventListener('mousedown', (ev: MouseEvent) => {
             ev.stopPropagation();
             if (gateElem.getAttribute('data-expanded') !== 'true') {
-                context.selectedId = _findDataId(elem);
+                context.selectedId = _findLocation(elem);
                 id = context.selectedId;
                 container.classList.add('moving');
                 dropzoneLayer.style.display = 'block';

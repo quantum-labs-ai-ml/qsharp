@@ -27,7 +27,7 @@ class CircuitEvents {
     private wireData: number[];
     private renderFn: () => void;
     private selectedOperation: Operation | null;
-    private selectedId: string | null;
+    private selectedLocation: string | null;
     private selectedWire: string | null;
 
     constructor(container: HTMLElement, sqore: Sqore, useRefresh: () => void) {
@@ -38,7 +38,7 @@ class CircuitEvents {
         this.wireData = this._wireData();
         this.renderFn = useRefresh;
         this.selectedOperation = null;
-        this.selectedId = null;
+        this.selectedLocation = null;
         this.selectedWire = null;
     }
 
@@ -75,18 +75,22 @@ class CircuitEvents {
      */
     _addDocumentEvents() {
         document.addEventListener('keydown', (ev: KeyboardEvent) => {
-            if (ev.ctrlKey && this.selectedId) {
+            if (ev.ctrlKey && this.selectedLocation) {
                 this.container.classList.remove('moving');
                 this.container.classList.add('copying');
-            } else if (ev.key == 'Delete' && this.selectedId != null) {
-                console.log('Removing operation with data-id: ', this.selectedId);
-                this._removeOperation(this.selectedId);
-                this.renderFn();
+            } else if (ev.key == 'Delete') {
+                if (this.selectedLocation != null) {
+                    console.log('Removing operation with location: ', this.selectedLocation);
+                    this._removeOperation(this.selectedLocation);
+                    this.renderFn();
+                } else {
+                    console.log('No operation selected');
+                }
             }
         });
 
         document.addEventListener('keyup', (ev: KeyboardEvent) => {
-            if (ev.ctrlKey && this.selectedId) {
+            if (ev.ctrlKey && this.selectedLocation) {
                 this.container.classList.remove('copying');
                 this.container.classList.add('moving');
             }
@@ -120,8 +124,8 @@ class CircuitEvents {
             gateElem?.addEventListener('mousedown', (ev: MouseEvent) => {
                 ev.stopPropagation();
                 if (gateElem.getAttribute('data-expanded') !== 'true') {
-                    this.selectedId = gateElem.getAttribute('data-id');
-                    this.selectedOperation = this._findOperation(this.selectedId);
+                    this.selectedLocation = gateElem.getAttribute('data-location');
+                    this.selectedOperation = this._findOperation(this.selectedLocation);
                     this.container.classList.add('moving');
                     this.dropzoneLayer.style.display = 'block';
                 }
@@ -165,17 +169,17 @@ class CircuitEvents {
         dropzoneElems.forEach((dropzoneElem) => {
             dropzoneElem.addEventListener('mouseup', (ev: MouseEvent) => {
                 const originalOperations = cloneDeep(this.operations);
-                const targetId = dropzoneElem.getAttribute('data-dropzone-id');
+                const targetLoc = dropzoneElem.getAttribute('data-dropzone-location');
                 const targetWire = dropzoneElem.getAttribute('data-dropzone-wire');
 
                 // Add a new operation from the toolbox
                 if (
-                    this.selectedId == null &&
+                    this.selectedLocation == null &&
                     this.selectedOperation !== null &&
-                    targetId !== null &&
+                    targetLoc !== null &&
                     targetWire !== null
                 ) {
-                    const newOperation = this._addOperation(this.selectedOperation, targetId);
+                    const newOperation = this._addOperation(this.selectedOperation, targetLoc);
                     if (newOperation != null) {
                         this._addY(targetWire, newOperation, this.wireData.length);
                     }
@@ -185,27 +189,27 @@ class CircuitEvents {
                 }
 
                 if (
-                    targetId == null ||
+                    targetLoc == null ||
                     targetWire == null ||
                     this.selectedOperation == null ||
-                    this.selectedId == null ||
+                    this.selectedLocation == null ||
                     this.selectedWire == null
                 )
                     return;
 
                 const newSourceOperation = ev.ctrlKey
-                    ? this._copyX(this.selectedId, targetId)
-                    : this._moveX(this.selectedId, targetId);
+                    ? this._copyX(this.selectedLocation, targetLoc)
+                    : this._moveX(this.selectedLocation, targetLoc);
 
                 if (newSourceOperation != null) {
                     this._moveY(this.selectedWire, targetWire, newSourceOperation, this.wireData.length);
-                    const parentOperation = this._findParentOperation(this.selectedId);
+                    const parentOperation = this._findParentOperation(this.selectedLocation);
                     if (parentOperation != null) {
                         parentOperation.targets = this._targets(parentOperation);
                     }
                 }
 
-                this.selectedId = null;
+                this.selectedLocation = null;
                 this.selectedOperation = null;
 
                 if (isEqual(originalOperations, this.operations) === false) this.renderFn();
@@ -220,25 +224,25 @@ class CircuitEvents {
     /**
      * Find the surrounding gate element of host element
      */
-    _findGateElem(elem: SVGElement): SVGElement | null {
-        return elem.closest<SVGElement>('[data-id]');
+    _findGateElem(hostElem: SVGElement): SVGElement | null {
+        return hostElem.closest<SVGElement>('[data-location]');
     }
 
     /**
-     * Find data-id of host element
+     * Find location of the gate surrounding a host element
      */
-    _findDataId(elem: SVGElement) {
-        const gateElem = this._findGateElem(elem);
-        return gateElem != null ? gateElem.getAttribute('data-id') : null;
+    _findLocation(hostElem: SVGElement) {
+        const gateElem = this._findGateElem(hostElem);
+        return gateElem != null ? gateElem.getAttribute('data-location') : null;
     }
 
     /**
-     * Find the parent operation of the operation specified by data-id
+     * Find the parent operation of the operation specified by location
      */
-    _findParentOperation(dataId: string | null): Operation | null {
-        if (!dataId) return null;
+    _findParentOperation(location: string | null): Operation | null {
+        if (!location) return null;
 
-        const indexes = this._indexes(dataId);
+        const indexes = this._indexes(location);
         indexes.pop();
         const lastIndex = indexes.pop();
 
@@ -252,12 +256,12 @@ class CircuitEvents {
     }
 
     /**
-     * Find the parent array of an operation based on its data-id
+     * Find the parent array of an operation based on its location
      */
-    _findParentArray(dataId: string | null): Operation[] | null {
-        if (!dataId) return null;
+    _findParentArray(location: string | null): Operation[] | null {
+        if (!location) return null;
 
-        const indexes = this._indexes(dataId);
+        const indexes = this._indexes(location);
         indexes.pop(); // The last index refers to the operation itself, remove it so that the last index instead refers to the parent operation
 
         let parentArray = this.operations;
@@ -268,13 +272,13 @@ class CircuitEvents {
     }
 
     /**
-     * Find an operation based on its data-id from a list of operations
+     * Find an operation based on its location
      */
-    _findOperation(dataId: string | null): Operation | null {
-        if (!dataId) return null;
+    _findOperation(location: string | null): Operation | null {
+        if (!location) return null;
 
-        const index = this._lastIndex(dataId);
-        const operationParent = this._findParentArray(dataId);
+        const index = this._lastIndex(location);
+        const operationParent = this._findParentArray(location);
 
         if (
             operationParent == null || //
@@ -292,9 +296,9 @@ class CircuitEvents {
     /**
      * Remove an operation
      */
-    _removeOperation(sourceId: string) {
-        const sourceOperation = this._findOperation(sourceId);
-        const sourceOperationParent = this._findParentArray(sourceId);
+    _removeOperation(sourceLocation: string) {
+        const sourceOperation = this._findOperation(sourceLocation);
+        const sourceOperationParent = this._findParentArray(sourceLocation);
 
         if (sourceOperation == null || sourceOperationParent == null) return null;
 
@@ -313,12 +317,12 @@ class CircuitEvents {
     /**
      * Move an operation horizontally
      */
-    _moveX = (sourceId: string, targetId: string): Operation | null => {
-        const sourceOperation = this._findOperation(sourceId);
-        if (sourceId === targetId) return sourceOperation;
-        const sourceOperationParent = this._findParentArray(sourceId);
-        const targetOperationParent = this._findParentArray(targetId);
-        const targetLastIndex = this._lastIndex(targetId);
+    _moveX = (sourceLocation: string, targetLocation: string): Operation | null => {
+        const sourceOperation = this._findOperation(sourceLocation);
+        if (sourceLocation === targetLocation) return sourceOperation;
+        const sourceOperationParent = this._findParentArray(sourceLocation);
+        const targetOperationParent = this._findParentArray(targetLocation);
+        const targetLastIndex = this._lastIndex(targetLocation);
 
         if (
             targetOperationParent == null ||
@@ -333,12 +337,14 @@ class CircuitEvents {
         targetOperationParent.splice(targetLastIndex, 0, newSourceOperation);
 
         // Delete sourceOperation
-        sourceOperation.gate = 'removed';
-        const indexToRemove = sourceOperationParent.findIndex((operation) => operation.gate === 'removed');
-        if (indexToRemove == -1) {
-            console.error("'removed' operation not found in parent array");
-            return null;
+        if (sourceOperation.dataAttributes === undefined) {
+            sourceOperation.dataAttributes = { removed: 'true' };
+        } else {
+            sourceOperation.dataAttributes['removed'] = 'true';
         }
+        const indexToRemove = sourceOperationParent.findIndex(
+            (operation) => operation.dataAttributes && operation.dataAttributes['removed'],
+        );
         sourceOperationParent.splice(indexToRemove, 1);
 
         return newSourceOperation;
@@ -347,10 +353,10 @@ class CircuitEvents {
     /**
      * Copy an operation horizontally
      */
-    _copyX = (sourceId: string, targetId: string): Operation | null => {
-        const sourceOperation = this._findOperation(sourceId);
-        const targetOperationParent = this._findParentArray(targetId);
-        const targetLastIndex = this._lastIndex(targetId);
+    _copyX = (sourceLocation: string, targetLocation: string): Operation | null => {
+        const sourceOperation = this._findOperation(sourceLocation);
+        const targetOperationParent = this._findParentArray(targetLocation);
+        const targetLastIndex = this._lastIndex(targetLocation);
 
         if (targetOperationParent == null || targetLastIndex == null || sourceOperation == null) return null;
 
@@ -364,9 +370,9 @@ class CircuitEvents {
     /**
      * Copy an operation horizontally
      */
-    _addOperation = (sourceOperation: Operation, targetId: string): Operation | null => {
-        const targetOperationParent = this._findParentArray(targetId);
-        const targetLastIndex = this._lastIndex(targetId);
+    _addOperation = (sourceOperation: Operation, targetLocation: string): Operation | null => {
+        const targetOperationParent = this._findParentArray(targetLocation);
+        const targetLastIndex = this._lastIndex(targetLocation);
 
         if (targetOperationParent == null || targetLastIndex == null || sourceOperation == null) return null;
 
@@ -500,18 +506,18 @@ class CircuitEvents {
     }
 
     /**
-     * Split data-id into an array of indexes
+     * Split location into an array of indexes
      */
-    _indexes(dataId: string): number[] {
-        return dataId !== '' ? dataId.split('-').map((segment) => parseInt(segment)) : [];
+    _indexes(location: string): number[] {
+        return location !== '' ? location.split('-').map((segment) => parseInt(segment)) : [];
     }
 
     /**
-     * Get the last index of data-id
-     * i.e: data-id = "0-1-2", _lastIndex will return 2
+     * Get the last index of location
+     * i.e: location = "0-1-2", _lastIndex will return 2
      */
-    _lastIndex(dataId: string): number | undefined {
-        return this._indexes(dataId).pop();
+    _lastIndex(location: string): number | undefined {
+        return this._indexes(location).pop();
     }
 }
 

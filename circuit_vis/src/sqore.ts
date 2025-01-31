@@ -27,11 +27,11 @@ interface ComposedSqore {
 }
 
 /**
- * Defines the mapping of unique ID to each operation. Used for enabling
+ * Defines the mapping of unique location to each operation. Used for enabling
  * interactivity.
  */
 type GateRegistry = {
-    [id: string]: Operation;
+    [location: string]: Operation;
 };
 
 type Extension = {
@@ -107,7 +107,7 @@ export class Sqore {
         const _circuit: Circuit = circuit ?? JSON.parse(JSON.stringify(this.circuit));
         const renderDepth = this.renderDepth;
 
-        // Assign unique IDs to each operation
+        // Assign unique locations to each operation
         _circuit.operations.forEach((op, i) => this.fillGateRegistry(op, i.toString()));
 
         // Render operations starting at given depth
@@ -117,10 +117,10 @@ export class Sqore {
         if (
             _circuit.operations.length == 1 &&
             _circuit.operations[0].dataAttributes != null &&
-            Object.prototype.hasOwnProperty.call(_circuit.operations[0].dataAttributes, 'id')
+            Object.prototype.hasOwnProperty.call(_circuit.operations[0].dataAttributes, 'location')
         ) {
-            const id: string = _circuit.operations[0].dataAttributes['id'];
-            this.expandOperation(_circuit.operations, id);
+            const location: string = _circuit.operations[0].dataAttributes['location'];
+            this.expandOperation(_circuit.operations, location);
         }
 
         // Create visualization components
@@ -209,22 +209,22 @@ export class Sqore {
     }
 
     /**
-     * Depth-first traversal to assign unique ID to `operation`.
-     * The operation is assigned the id `id` and its `i`th child is recursively given
-     * the id `${id}-${i}`.
+     * Depth-first traversal to assign unique location string to `operation`.
+     * The operation is assigned the location `location` and its `i`th child is recursively given
+     * the location `${location}-${i}`.
      *
      * @param operation Operation to be assigned.
-     * @param id: ID to assign to `operation`.
+     * @param location: Location to assign to `operation`.
      *
      */
-    private fillGateRegistry(operation: Operation, id: string): void {
+    private fillGateRegistry(operation: Operation, location: string): void {
         if (operation.dataAttributes == null) operation.dataAttributes = {};
-        operation.dataAttributes['id'] = id;
+        operation.dataAttributes['location'] = location;
         // By default, operations cannot be zoomed-out
         operation.dataAttributes['zoom-out'] = 'false';
-        this.gateRegistry[id] = operation;
+        this.gateRegistry[location] = operation;
         operation.children?.forEach((childOp, i) => {
-            this.fillGateRegistry(childOp, `${id}-${i}`);
+            this.fillGateRegistry(childOp, `${location}-${i}`);
             if (childOp.dataAttributes == null) childOp.dataAttributes = {};
             // Children operations can be zoomed out
             childOp.dataAttributes['zoom-out'] = 'true';
@@ -322,12 +322,12 @@ export class Sqore {
         container.querySelectorAll('.gate .gate-control').forEach((ctrl) => {
             // Zoom in on clicked gate
             ctrl.addEventListener('click', (ev: Event) => {
-                const gateId: string | null | undefined = ctrl.parentElement?.getAttribute('data-id');
-                if (typeof gateId == 'string') {
+                const gateLoc: string | null | undefined = ctrl.parentElement?.getAttribute('data-location');
+                if (typeof gateLoc == 'string') {
                     if (ctrl.classList.contains('gate-collapse')) {
-                        this.collapseOperation(circuit.operations, gateId);
+                        this.collapseOperation(circuit.operations, gateLoc);
                     } else if (ctrl.classList.contains('gate-expand')) {
-                        this.expandOperation(circuit.operations, gateId);
+                        this.expandOperation(circuit.operations, gateLoc);
                     }
                     this.renderCircuit(container, circuit);
 
@@ -341,15 +341,15 @@ export class Sqore {
      * Expand selected operation for zoom-in interaction.
      *
      * @param operations List of circuit operations.
-     * @param id ID of operation to expand.
+     * @param location Location of operation to expand.
      *
      */
-    private expandOperation(operations: Operation[], id: string): void {
+    private expandOperation(operations: Operation[], location: string): void {
         operations.forEach((op) => {
-            if (op.conditionalRender === ConditionalRender.AsGroup) this.expandOperation(op.children || [], id);
+            if (op.conditionalRender === ConditionalRender.AsGroup) this.expandOperation(op.children || [], location);
             if (op.dataAttributes == null) return op;
-            const opId: string = op.dataAttributes['id'];
-            if (opId === id && op.children != null) {
+            const opLoc: string = op.dataAttributes['location'];
+            if (opLoc === location && op.children != null) {
                 op.conditionalRender = ConditionalRender.AsGroup;
                 op.dataAttributes['expanded'] = 'true';
             }
@@ -360,16 +360,17 @@ export class Sqore {
      * Collapse selected operation for zoom-out interaction.
      *
      * @param operations List of circuit operations.
-     * @param id ID of operation to collapse.
+     * @param parentLoc Location of operation to collapse.
      *
      */
-    private collapseOperation(operations: Operation[], parentId: string): void {
+    private collapseOperation(operations: Operation[], parentLoc: string): void {
         operations.forEach((op) => {
-            if (op.conditionalRender === ConditionalRender.AsGroup) this.collapseOperation(op.children || [], parentId);
+            if (op.conditionalRender === ConditionalRender.AsGroup)
+                this.collapseOperation(op.children || [], parentLoc);
             if (op.dataAttributes == null) return op;
-            const opId: string = op.dataAttributes['id'];
+            const opLoc: string = op.dataAttributes['location'];
             // Collapse parent gate and its children
-            if (opId.startsWith(parentId)) {
+            if (opLoc.startsWith(parentLoc)) {
                 op.conditionalRender = ConditionalRender.Always;
                 delete op.dataAttributes['expanded'];
             }
