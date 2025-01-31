@@ -5,7 +5,7 @@ import cloneDeep from 'lodash/cloneDeep';
 import range from 'lodash/range';
 import { Operation } from './circuit';
 import { gateHeight, horizontalGap, minGateWidth, panelWidth, verticalGap } from './constants';
-import { _equivOperation, _equivParentArray, _lastIndex, _offsetRecursively } from './draggable';
+import { _findOperation, _findParentArray, _lastIndex, _offsetRecursively } from './draggable';
 import { _formatGate } from './formatters/gateFormatter';
 import { GateType, Metadata } from './metadata';
 import { Register } from './register';
@@ -66,23 +66,43 @@ const extensionPanel =
         const dispatch = (action: Action) => {
             update(action, context, useRefresh);
 
-            const panelElem = panel(dispatch, context, options);
-            const prevPanelElem = container.querySelector('.panel');
+            // const panelElem = panel(dispatch, context, options);
+            // const prevPanelElem = container.querySelector('.panel');
 
-            if (prevPanelElem) {
-                container.replaceChild(panelElem, prevPanelElem);
-            }
+            // if (prevPanelElem) {
+            //     container.replaceChild(panelElem, prevPanelElem);
+            // }
         };
 
-        addEvents(dispatch, container, sqore);
+        //addEvents(dispatch, container, sqore);
 
-        const panelElem = panel(dispatch, context, options);
-        const prevPanelElem = container.querySelector('.panel');
-
-        if (prevPanelElem == null) {
+        if (container.querySelector('.panel') == null) {
+            const panelElem = panel(dispatch, context, options);
+            // otherAddEvents(panelElem, sqore);
             container.prepend(panelElem);
         }
+
+        // const panelElem = panel(dispatch, context, options);
+        // const prevPanelElem = container.querySelector('.panel');
+
+        // if (prevPanelElem == null) {
+        //     container.prepend(panelElem);
+        // }
     };
+
+const otherAddEvents = (panel: HTMLElement, sqore: Sqore): void => {
+    const elems = panel.querySelectorAll<SVGElement>('[toolbox-item]');
+    elems.forEach((elem) => {
+        elem.setAttribute('DEBUG_ATTRIBUTE', 'true');
+        elem.addEventListener('mousedown', (ev: MouseEvent) => {
+            ev.stopImmediatePropagation();
+            console.log('clicked on toolbox gate');
+            // const dataId = elem.getAttribute('data-id');
+            // const operation = _findOperation(dataId, sqore.circuit.operations);
+            // console.log(operation);
+        });
+    });
+};
 
 /**
  * Function to handle all event listeners
@@ -97,9 +117,9 @@ const addEvents = (dispatch: Dispatch, container: HTMLElement, sqore: Sqore): vo
         elem.addEventListener('mousedown', (ev: MouseEvent) => {
             ev.stopImmediatePropagation();
             const dataId = elem.getAttribute('data-id');
-            const operation = _equivOperation(dataId, sqore.circuit.operations);
+            const operation = _findOperation(dataId, sqore.circuit.operations);
             dispatch({ type: 'OPERATION', payload: operation });
-            dispatch({ type: 'EDIT_MODE' });
+            //dispatch({ type: 'EDIT_MODE' });
         }),
     );
 
@@ -121,9 +141,10 @@ const addEvents = (dispatch: Dispatch, container: HTMLElement, sqore: Sqore): vo
     const dropzoneElems = dropzoneLayer.querySelectorAll<SVGRectElement>('.dropzone');
     dropzoneElems.forEach((dropzoneElem) =>
         dropzoneElem.addEventListener('mouseup', () => {
+            console.log('dropzone mouseup from panel.ts');
             if (
-                context.operation && //
-                context.addMode
+                context.operation
+                // && context.addMode
             ) {
                 const targetId = dropzoneElem.getAttribute('data-dropzone-id');
                 const targetWire = dropzoneElem.getAttribute('data-dropzone-wire');
@@ -165,7 +186,7 @@ const update = (action: Action, context: Context, useRefresh: () => void): void 
             break;
         }
         case 'EDIT_MODE': {
-            context.addMode = false;
+            //context.addMode = false;
             break;
         }
         case 'OPERATION': {
@@ -202,7 +223,7 @@ const update = (action: Action, context: Context, useRefresh: () => void): void 
         }
         case 'ADD_OPERATION': {
             const targetId = action.payload as string;
-            const targetOperationParent = _equivParentArray(targetId, context.operations);
+            const targetOperationParent = _findParentArray(targetId, context.operations);
             const targetLastIndex = _lastIndex(targetId);
             if (
                 targetOperationParent != null && //
@@ -646,7 +667,9 @@ const gate = (dispatch: Dispatch, gateDictionary: GateDictionary, type: string, 
     const operation = gateDictionary[type];
     if (operation == null) throw new Error(`Gate ${type} not available`);
     const metadata = toMetadata(operation, x, y);
+    metadata.dataAttributes = { type: type };
     const gateElem = _formatGate(metadata).cloneNode(true) as SVGElement;
+    gateElem.setAttribute('toolbox-item', 'true');
     gateElem.addEventListener('mousedown', (ev: MouseEvent) => {
         // Generate equivalent ghost element with x and y at 0
         const ghostMetadata = toMetadata(operation, 0, 0);
@@ -734,4 +757,12 @@ const exportedForTesting = {
     defaultGateDictionary,
 };
 
-export { extensionPanel, PanelOptions, exportedForTesting, Dispatch, Action, Context as PanelContext };
+export {
+    extensionPanel,
+    PanelOptions,
+    exportedForTesting,
+    Dispatch,
+    Action,
+    Context as PanelContext,
+    defaultGateDictionary,
+};

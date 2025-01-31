@@ -5,6 +5,8 @@ import * as qviz from "@microsoft/quantum-viz.js/lib";
 import { useEffect, useRef, useState } from "preact/hooks";
 import { CircuitProps } from "./data.js";
 import { Spinner } from "./spinner.js";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { CircuitDesigner } from "./editor2";
 
 // For perf reasons we set a limit on how many gates/qubits
 // we attempt to render. This is still a lot higher than a human would
@@ -58,7 +60,8 @@ function ZoomableCircuit(props: {
     if (rendering) {
       const container = circuitDiv.current!;
       // Draw the circuit - may take a while for large circuits
-      const svg = renderCircuit(props.circuit, container, props.editCallback);
+      //const svg = renderCircuit(props.circuit, container, props.editCallback);
+      const svg = renderCircuit(props.circuit, container);
       // Calculate the initial zoom level based on the container width
       const initialZoom = calculateZoomToFit(container, svg as SVGElement);
       // Set the initial zoom level
@@ -137,15 +140,18 @@ function ZoomableCircuit(props: {
   function renderCircuit(
     circuit: qviz.Circuit,
     container: HTMLDivElement,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     editCallback?: (circuit: qviz.Circuit) => void,
   ) {
-    const temp = qviz.create(circuit).useDraggable().usePanel();
+    // new CircuitDesigner(container, circuit);
+
+    let temp = qviz.create(circuit).useDraggable().usePanel();
 
     if (editCallback) {
-      temp.useOnCircuitChange(editCallback).draw(container);
-    } else {
-      temp.draw(container);
+      temp = temp.useOnCircuitChange(editCallback);
     }
+
+    temp.useEvents().draw(container);
 
     // quantum-viz hardcodes the styles in the SVG.
     // Remove the style elements -- we'll define the styles in our own CSS.

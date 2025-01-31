@@ -42,7 +42,7 @@ const extensionDraggable = (container: HTMLElement, sqore: Sqore, useRefresh: ()
     _addStyles(container, _wireData(container));
     _addDataWires(container);
     svg.appendChild(_dropzoneLayer(context));
-    _addEvents(context);
+    //_addEvents(context);
 };
 
 /**
@@ -276,7 +276,6 @@ const _addEvents = (context: Context) => {
     // Host element events
     const elems = _hostElems(container);
     elems.forEach((elem) => {
-        elem.setAttribute('draggable', 'true');
         elem.addEventListener('mousedown', () => {
             context.selectedWire = elem.getAttribute('data-wire');
         });
