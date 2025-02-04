@@ -129,7 +129,7 @@ class CircuitEvents {
                     const selectedLocation = gateElem.getAttribute('data-location');
                     this.selectedOperation = this._findOperation(selectedLocation);
 
-                    this.createGhostElement(gateElem, ev);
+                    this.createGhostElement(ev);
 
                     // ToDo: This shouldn't be necessary. Find out why all the operations are missing their dataAttributes from sqore
                     if (this.selectedOperation && selectedLocation) {
@@ -146,7 +146,7 @@ class CircuitEvents {
         });
     }
 
-    createGhostElement(gateElem: SVGElement, ev: MouseEvent) {
+    createGhostElement(ev: MouseEvent) {
         const ghostMetadata = toMetadata(this.selectedOperation!, 0, 0);
         const ghost = _formatGate(ghostMetadata).cloneNode(true) as SVGElement;
 
@@ -190,24 +190,14 @@ class CircuitEvents {
     _addToolboxElementsEvents() {
         const elems = this._toolboxElems();
         elems.forEach((elem) => {
-            elem.addEventListener('mousedown', () => {
+            elem.addEventListener('mousedown', (ev: MouseEvent) => {
                 this.container.classList.add('moving');
                 this.dropzoneLayer.style.display = 'block';
                 const type = elem.getAttribute('data-type');
                 if (type == null) return;
                 this.selectedOperation = defaultGateDictionary[type];
+                this.createGhostElement(ev);
             });
-
-            // const gateElem = this._findGateElem(elem);
-            // gateElem?.setAttribute('gate-draggable', 'true');
-            // gateElem?.addEventListener('mousedown', (ev: MouseEvent) => {
-            //     ev.stopPropagation();
-            //     if (gateElem.getAttribute('data-expanded') !== 'true') {
-            //         this.selectedId = gateElem.getAttribute('data-id');
-            //         this.container.classList.add('moving');
-            //         this.dropzoneLayer.style.display = 'block';
-            //     }
-            // });
         });
     }
 
