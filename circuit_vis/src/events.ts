@@ -6,7 +6,8 @@ import { Operation } from './circuit';
 import { Register } from './register';
 import { Sqore } from './sqore';
 import isEqual from 'lodash/isEqual';
-import { defaultGateDictionary } from './panel';
+import { defaultGateDictionary, toMetadata } from './panel';
+import { _formatGate } from './formatters/gateFormatter';
 
 const extensionEvents = (container: HTMLElement, sqore: Sqore, useRefresh: () => void): void => {
     const events = new CircuitEvents(container, sqore, useRefresh);
@@ -21,7 +22,7 @@ const extensionEvents = (container: HTMLElement, sqore: Sqore, useRefresh: () =>
 
 class CircuitEvents {
     private container: HTMLElement;
-    private svg: SVGElement;
+    private circuitSvg: SVGElement;
     private dropzoneLayer: SVGGElement;
     private operations: Operation[];
     private wireData: number[];
@@ -31,7 +32,7 @@ class CircuitEvents {
 
     constructor(container: HTMLElement, sqore: Sqore, useRefresh: () => void) {
         this.container = container;
-        this.svg = container.querySelector('svg[id]') as SVGElement;
+        this.circuitSvg = container.querySelector('svg[id]') as SVGElement;
         this.dropzoneLayer = container.querySelector('.dropzone-layer') as SVGGElement;
         this.operations = sqore.circuit.operations;
         this.wireData = this._wireData();
@@ -93,6 +94,12 @@ class CircuitEvents {
 
         document.addEventListener('mouseup', () => {
             this.container.classList.remove('moving', 'copying');
+            if (this.container) {
+                const ghostElem = this.container.querySelector('.ghost');
+                if (ghostElem) {
+                    this.container.removeChild(ghostElem);
+                }
+            }
         });
     }
 
@@ -121,6 +128,9 @@ class CircuitEvents {
                 if (gateElem.getAttribute('data-expanded') !== 'true') {
                     const selectedLocation = gateElem.getAttribute('data-location');
                     this.selectedOperation = this._findOperation(selectedLocation);
+
+                    this.createGhostElement(gateElem, ev);
+
                     // ToDo: This shouldn't be necessary. Find out why all the operations are missing their dataAttributes from sqore
                     if (this.selectedOperation && selectedLocation) {
                         if (this.selectedOperation.dataAttributes == null) {
@@ -134,6 +144,44 @@ class CircuitEvents {
                 }
             });
         });
+    }
+
+    createGhostElement(gateElem: SVGElement, ev: MouseEvent) {
+        const ghostMetadata = toMetadata(this.selectedOperation!, 0, 0);
+        const ghost = _formatGate(ghostMetadata).cloneNode(true) as SVGElement;
+
+        // Generate svg element to wrap around ghost element
+        const svgElem = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svgElem.append(ghost);
+
+        // Generate div element to wrap around svg element
+        const divElem = document.createElement('div');
+        divElem.classList.add('ghost');
+        divElem.appendChild(svgElem);
+
+        if (this.container) {
+            this.container.appendChild(divElem);
+
+            // Now that the element is appended to the DOM, get its dimensions
+            const ghostRect = ghost.getBoundingClientRect();
+            const ghostWidth = ghostRect.width;
+            const ghostHeight = ghostRect.height;
+
+            const updateDivLeftTop = (ev: MouseEvent) => {
+                divElem.style.left = `${ev.clientX - ghostWidth / 2}px`;
+                divElem.style.top = `${ev.clientY - ghostHeight / 2}px`;
+            };
+
+            const handleMouseMove = (ev: MouseEvent) => {
+                updateDivLeftTop(ev);
+            };
+
+            updateDivLeftTop(ev);
+
+            this.container.addEventListener('mousemove', handleMouseMove);
+        } else {
+            console.error('container not found');
+        }
     }
 
     /**
@@ -414,7 +462,7 @@ class CircuitEvents {
      */
     _hostElems(): SVGGraphicsElement[] {
         return Array.from(
-            this.svg.querySelectorAll<SVGGraphicsElement>(
+            this.circuitSvg.querySelectorAll<SVGGraphicsElement>(
                 '[class^="gate-"]:not(.gate-control, .gate-swap), .control-dot, .oplus, .cross',
             ),
         );

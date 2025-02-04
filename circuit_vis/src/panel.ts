@@ -716,7 +716,9 @@ const defaultGateDictionary: GateDictionary = {
     },
     X: {
         gate: 'X',
+        isControlled: true,
         targets: [{ qId: 0, type: 0 }],
+        controls: [{ qId: 1, type: 0 }],
     },
     S: {
         gate: 'S',
@@ -765,4 +767,5 @@ export {
     Action,
     Context as PanelContext,
     defaultGateDictionary,
+    toMetadata,
 };
