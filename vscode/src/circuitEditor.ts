@@ -60,7 +60,6 @@ export class CircuitEditorProvider implements vscode.CustomTextEditorProvider {
         circuit,
       };
 
-      console.log("Sending message to webview");
       const message = {
         command: "circuit",
         props,
@@ -144,7 +143,7 @@ export class CircuitEditorProvider implements vscode.CustomTextEditorProvider {
     const resourcesUri = getUri(["resources"]);
     return `
       <!DOCTYPE html>
-      <html lang="en">
+      <html class="qs-circuit-html" lang="en">
         <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
