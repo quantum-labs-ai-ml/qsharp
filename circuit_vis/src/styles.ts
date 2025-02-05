@@ -301,4 +301,17 @@ const _panel = `
             z-index: 1;
             pointer-events: none;
         }
+        .qubit-line-control {
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .add-qubit-line, .remove-qubit-line {
+            border-radius: 4px;
+            padding: 8px 16px;
+            margin: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
     `;

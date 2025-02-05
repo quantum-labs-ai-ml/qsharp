@@ -2,7 +2,7 @@
 // Licensed under the MIT license.
 
 import cloneDeep from 'lodash/cloneDeep';
-import { Operation } from './circuit';
+import { Operation, Qubit } from './circuit';
 import { Register } from './register';
 import { Sqore } from './sqore';
 import isEqual from 'lodash/isEqual';
@@ -14,10 +14,11 @@ const extensionEvents = (container: HTMLElement, sqore: Sqore, useRefresh: () =>
 
     events._addContextMenuEvent();
     events._addDropzoneLayerEvents();
-    events._addDocumentEvents();
     events._addHostElementsEvents();
     events._addToolboxElementsEvents();
     events._addDropzoneElementsEvents();
+    events._addQubitLineControlEvents();
+    events._addDocumentEvents();
 };
 
 class CircuitEvents {
@@ -25,6 +26,7 @@ class CircuitEvents {
     private circuitSvg: SVGElement;
     private dropzoneLayer: SVGGElement;
     private operations: Operation[];
+    private qubits: Qubit[];
     private wireData: number[];
     private renderFn: () => void;
     private selectedOperation: Operation | null;
@@ -35,6 +37,7 @@ class CircuitEvents {
         this.circuitSvg = container.querySelector('svg[id]') as SVGElement;
         this.dropzoneLayer = container.querySelector('.dropzone-layer') as SVGGElement;
         this.operations = sqore.circuit.operations;
+        this.qubits = sqore.circuit.qubits;
         this.wireData = this._wireData();
         this.renderFn = useRefresh;
         this.selectedOperation = null;
@@ -244,6 +247,37 @@ class CircuitEvents {
         });
     }
 
+    _addQubitLineControlEvents() {
+        const addQubitLineButton = this.container.querySelector('.add-qubit-line');
+        const removeQubitLineButton = this.container.querySelector('.remove-qubit-line');
+
+        if (addQubitLineButton && !addQubitLineButton.hasAttribute('data-event-added')) {
+            addQubitLineButton.addEventListener('click', () => {
+                this.qubits.push({ id: this.qubits.length });
+                this.renderFn();
+            });
+            addQubitLineButton.setAttribute('data-event-added', 'true');
+        }
+
+        if (removeQubitLineButton && !removeQubitLineButton.hasAttribute('data-event-added')) {
+            removeQubitLineButton.addEventListener('click', () => {
+                const check = (op: Operation) => {
+                    if (op.targets.some((reg) => reg.qId == this.qubits.length - 1)) {
+                        return true;
+                    }
+                    if (op.controls && op.controls.some((reg) => reg.qId == this.qubits.length - 1)) {
+                        return true;
+                    }
+                    return false;
+                };
+                this._findAndRemoveOperations(check);
+                this.qubits.pop();
+                this.renderFn();
+            });
+            removeQubitLineButton.setAttribute('data-event-added', 'true');
+        }
+    }
+
     /**********************
      *  Finder Functions  *
      **********************/
@@ -310,6 +344,32 @@ class CircuitEvents {
         if (operationParent == null || index == null) return null;
 
         return operationParent[index];
+    }
+
+    _findAndRemoveOperations(pred: (op: Operation) => boolean): void {
+        const originalOperations = cloneDeep(this.operations);
+
+        const inPlaceFilter = (ops: Operation[], pred: (op: Operation) => boolean) => {
+            let i = 0;
+            while (i < ops.length) {
+                if (!pred(ops[i])) {
+                    ops.splice(i, 1);
+                } else {
+                    i++;
+                }
+            }
+        };
+
+        const recursivePred = (op: Operation) => {
+            if (pred(op)) return true;
+            if (op.children) {
+                inPlaceFilter(op.children, (child) => !recursivePred(child));
+            }
+            return false;
+        };
+
+        inPlaceFilter(this.operations, (op) => !recursivePred(op));
+        if (isEqual(originalOperations, this.operations) === false) this.renderFn();
     }
 
     /**************************

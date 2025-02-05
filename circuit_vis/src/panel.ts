@@ -34,8 +34,27 @@ const extensionPanel =
         if (container.querySelector('.panel') == null) {
             const panelElem = panel(options);
             container.prepend(panelElem);
+            container.appendChild(qubitLineControl());
         }
     };
+
+const qubitLineControl = (): HTMLElement => {
+    const qubitLineControlElem = elem('div', 'qubit-line-control');
+    children(qubitLineControlElem, [title('Add/Remove Qubit Lines:'), addQubitLineControl(), removeQubitLineControl()]);
+    return qubitLineControlElem;
+};
+
+const addQubitLineControl = (): HTMLElement => {
+    const addQubitLineControlElem = elem('button', 'add-qubit-line');
+    addQubitLineControlElem.textContent = '+';
+    return addQubitLineControlElem;
+};
+
+const removeQubitLineControl = (): HTMLElement => {
+    const removeQubitLineControlElem = elem('button', 'remove-qubit-line');
+    removeQubitLineControlElem.textContent = '-';
+    return removeQubitLineControlElem;
+};
 
 /**
  * Function to produce panel element
