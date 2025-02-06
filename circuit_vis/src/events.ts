@@ -398,6 +398,36 @@ class CircuitEvents {
             (operation) => operation.dataAttributes && operation.dataAttributes['removed'],
         );
         sourceOperationParent.splice(indexToRemove, 1);
+
+        if (sourceOperation.isMeasurement) {
+            this._removeMeasurementLines(sourceOperation);
+        }
+    }
+
+    /**
+     * Removes all measurement lines of a measure from the circuit and adjust the cIds of the other measurements
+     */
+    _removeMeasurementLines(sourceOperation: Operation) {
+        for (const target of sourceOperation.targets) {
+            const qubit = this.qubits[target.qId];
+            if (qubit.numChildren != undefined && target.cId != undefined) {
+                for (const op of this.operations) {
+                    if (op.controls) {
+                        for (const control of op.controls) {
+                            if (control.qId === target.qId && control.cId && control.cId > target.cId) {
+                                control.cId--;
+                            }
+                        }
+                    }
+                    for (const targetReg of op.targets) {
+                        if (targetReg.qId === target.qId && targetReg.cId && targetReg.cId > target.cId) {
+                            targetReg.cId--;
+                        }
+                    }
+                }
+                qubit.numChildren--;
+            }
+        }
     }
 
     /**
@@ -435,6 +465,10 @@ class CircuitEvents {
             (operation) => operation.dataAttributes && operation.dataAttributes['removed'],
         );
         sourceOperationParent.splice(indexToRemove, 1);
+
+        if (sourceOperation.isMeasurement) {
+            this._removeMeasurementLines(sourceOperation);
+        }
 
         return newSourceOperation;
     };
