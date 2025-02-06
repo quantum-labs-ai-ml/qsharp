@@ -30,7 +30,7 @@ class CircuitEvents {
     private wireData: number[];
     private renderFn: () => void;
     private selectedOperation: Operation | null;
-    private selectedWire: string | null;
+    private selectedWire: number | null;
 
     constructor(container: HTMLElement, sqore: Sqore, useRefresh: () => void) {
         this.container = container;
@@ -122,7 +122,8 @@ class CircuitEvents {
         const elems = this._hostElems();
         elems.forEach((elem) => {
             elem.addEventListener('mousedown', () => {
-                this.selectedWire = elem.getAttribute('data-wire');
+                const selectedWireStr = elem.getAttribute('data-wire');
+                this.selectedWire = selectedWireStr != null ? parseInt(selectedWireStr) : null;
             });
 
             const gateElem = this._findGateElem(elem);
@@ -214,24 +215,26 @@ class CircuitEvents {
             dropzoneElem.addEventListener('mouseup', (ev: MouseEvent) => {
                 const originalOperations = cloneDeep(this.operations);
                 const targetLoc = dropzoneElem.getAttribute('data-dropzone-location');
-                const targetWire = dropzoneElem.getAttribute('data-dropzone-wire');
+                const targetWireStr = dropzoneElem.getAttribute('data-dropzone-wire');
+                const targetWire = targetWireStr != null ? parseInt(targetWireStr) : null;
 
                 if (targetLoc == null || targetWire == null || this.selectedOperation == null) return;
                 const sourceLocation = this._getLocation(this.selectedOperation);
 
                 if (sourceLocation == null) {
                     // Add a new operation from the toolbox
-                    const newOperation = this._addOperation(this.selectedOperation, targetLoc);
-                    if (newOperation) {
-                        this._addY(targetWire, newOperation, this.wireData.length);
-                    }
-                } else if (sourceLocation && this.selectedWire) {
+                    // const newOperation = this._addOperation(this.selectedOperation, targetLoc, targetWire);
+                    this._addOperation(this.selectedOperation, targetLoc, targetWire);
+                    // if (newOperation) {
+                    //     this._moveY(targetWire, newOperation, this.wireData.length);
+                    // }
+                } else if (sourceLocation && this.selectedWire != null) {
                     const newOperation = ev.ctrlKey
-                        ? this._addOperation(this.selectedOperation, targetLoc)
-                        : this._moveX(sourceLocation, targetLoc);
+                        ? this._addOperation(this.selectedOperation, targetLoc, targetWire)
+                        : this._moveX(sourceLocation, targetLoc, targetWire);
 
                     if (newOperation) {
-                        this._moveY(this.selectedWire, targetWire, newOperation, this.wireData.length);
+                        this._moveY(targetWire - this.selectedWire, newOperation, this.wireData.length);
                         const parentOperation = this._findParentOperation(sourceLocation);
                         if (parentOperation) {
                             parentOperation.targets = this._targets(parentOperation);
@@ -377,7 +380,7 @@ class CircuitEvents {
      **************************/
 
     /**
-     * Remove an operation
+     * Remove an operation from the circuit
      */
     _removeOperation(sourceLocation: string) {
         const sourceOperation = this._findOperation(sourceLocation);
@@ -400,7 +403,7 @@ class CircuitEvents {
     /**
      * Move an operation horizontally
      */
-    _moveX = (sourceLocation: string, targetLocation: string): Operation | null => {
+    _moveX = (sourceLocation: string, targetLocation: string, targetWire: number): Operation | null => {
         const sourceOperation = this._findOperation(sourceLocation);
         if (sourceLocation === targetLocation) return sourceOperation;
         const sourceOperationParent = this._findParentArray(sourceLocation);
@@ -417,6 +420,9 @@ class CircuitEvents {
 
         // Insert sourceOperation to target last index
         const newSourceOperation: Operation = JSON.parse(JSON.stringify(sourceOperation));
+        if (newSourceOperation.isMeasurement) {
+            this._addMeasurementLine(newSourceOperation, targetWire);
+        }
         targetOperationParent.splice(targetLastIndex, 0, newSourceOperation);
 
         // Delete sourceOperation
@@ -434,10 +440,9 @@ class CircuitEvents {
     };
 
     /**
-     * Copy an operation horizontally
+     * Add an operation into the circuit
      */
-    _copyX = (sourceLocation: string, targetLocation: string): Operation | null => {
-        const sourceOperation = this._findOperation(sourceLocation);
+    _addOperation = (sourceOperation: Operation, targetLocation: string, targetWire: number): Operation | null => {
         const targetOperationParent = this._findParentArray(targetLocation);
         const targetLastIndex = this._lastIndex(targetLocation);
 
@@ -445,45 +450,34 @@ class CircuitEvents {
 
         // Insert sourceOperation to target last index
         const newSourceOperation: Operation = JSON.parse(JSON.stringify(sourceOperation));
+        if (newSourceOperation.isMeasurement) {
+            this._addMeasurementLine(newSourceOperation, targetWire);
+        } else {
+            newSourceOperation.targets = [{ qId: targetWire, type: 0 }];
+        }
         targetOperationParent.splice(targetLastIndex, 0, newSourceOperation);
 
         return newSourceOperation;
     };
 
     /**
-     * Copy an operation horizontally
+     * Add a measurement line to the circuit and attach the source operation
      */
-    _addOperation = (sourceOperation: Operation, targetLocation: string): Operation | null => {
-        const targetOperationParent = this._findParentArray(targetLocation);
-        const targetLastIndex = this._lastIndex(targetLocation);
-
-        if (targetOperationParent == null || targetLastIndex == null || sourceOperation == null) return null;
-
-        // Insert sourceOperation to target last index
-        const newSourceOperation: Operation = JSON.parse(JSON.stringify(sourceOperation));
-        targetOperationParent.splice(targetLastIndex, 0, newSourceOperation);
-
-        return newSourceOperation;
+    _addMeasurementLine = (sourceOperation: Operation, targetQubitWire: number) => {
+        const newNumChildren = this.qubits[targetQubitWire].numChildren
+            ? this.qubits[targetQubitWire].numChildren + 1
+            : 1;
+        this.qubits[targetQubitWire].numChildren = newNumChildren;
+        sourceOperation.targets = [{ qId: targetQubitWire, type: 1, cId: newNumChildren - 1 }];
+        sourceOperation.controls = [{ qId: targetQubitWire, type: 0 }];
     };
 
     /**
      * Move an operation vertically by changing its controls and targets
      */
-    _moveY = (sourceWire: string, targetWire: string, operation: Operation, totalWires: number): Operation => {
-        if (operation.gate !== 'measure') {
-            const offset = parseInt(targetWire) - parseInt(sourceWire);
-            this._offsetRecursively(operation, offset, totalWires);
-        }
-        return operation;
-    };
-
-    /**
-     * Add an operation vertically by changing its controls and targets
-     */
-    _addY = (targetWire: string, operation: Operation, totalWires: number): Operation => {
-        if (operation.gate !== 'measure') {
-            const offset = parseInt(targetWire);
-            this._offsetRecursively(operation, offset, totalWires);
+    _moveY = (targetWire: number, operation: Operation, totalWires: number): Operation => {
+        if (!operation.isMeasurement) {
+            this._offsetRecursively(operation, targetWire, totalWires);
         }
         return operation;
     };

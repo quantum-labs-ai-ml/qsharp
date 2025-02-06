@@ -62,8 +62,12 @@ function ZoomableCircuit(props: {
     if (rendering) {
       const container = circuitDiv.current!;
       // Draw the circuit - may take a while for large circuits
-      //const svg = renderCircuit(props.circuit, container, props.editCallback);
-      const svg = renderCircuit(props.circuit, container, props.isEditable);
+      const svg = renderCircuit(
+        props.circuit,
+        container,
+        props.isEditable,
+        // props.editCallback,
+      );
       // Calculate the initial zoom level based on the container width
       const initialZoom = calculateZoomToFit(container, svg as SVGElement);
       // Set the initial zoom level
@@ -147,13 +151,13 @@ function ZoomableCircuit(props: {
     editCallback?: (circuit: qviz.Circuit) => void,
   ) {
     if (isEditable) {
-      let temp = qviz.create(circuit).useDraggable().usePanel();
+      let circuitPanel = qviz.create(circuit).useDraggable().usePanel();
 
       if (editCallback) {
-        temp = temp.useOnCircuitChange(editCallback);
+        circuitPanel = circuitPanel.useOnCircuitChange(editCallback);
       }
 
-      temp.useEvents().draw(container);
+      circuitPanel.useEvents().draw(container);
     } else {
       qviz.create(circuit).draw(container);
     }

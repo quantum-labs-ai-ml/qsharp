@@ -193,6 +193,7 @@ const toMetadata = (operation: Operation | undefined, x: number, y: number): Met
 
     if (isMeasurement) {
         metadata.type = GateType.Measure;
+        metadata.controlsY = [y + 1 + gateHeight / 2];
     } else if (gate === 'SWAP') {
         metadata.type = GateType.Swap;
     } else if (isControlled) {
@@ -242,9 +243,11 @@ interface GateDictionary {
  * Object for default gate dictionary
  */
 const defaultGateDictionary: GateDictionary = {
-    RX: {
-        gate: 'RX',
-        targets: [{ qId: 0, type: 0 }],
+    Measure: {
+        gate: 'Measure',
+        isMeasurement: true,
+        controls: [{ qId: 0, type: 0 }],
+        targets: [{ qId: 0, type: 1, cId: 0 }],
     },
     RY: {
         gate: 'RY',
