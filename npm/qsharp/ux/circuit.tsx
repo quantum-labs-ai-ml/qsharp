@@ -18,6 +18,7 @@ const MAX_QUBITS = 1000;
 // This component is shared by the Python widget and the VS Code panel
 export function Circuit(props: {
   circuit: qviz.Circuit;
+  isEditable: boolean;
   editCallback?: (circuit: qviz.Circuit) => void;
 }) {
   const circuit = props.circuit;
@@ -42,6 +43,7 @@ export function Circuit(props: {
 
 function ZoomableCircuit(props: {
   circuit: qviz.Circuit;
+  isEditable: boolean;
   editCallback?: (circuit: qviz.Circuit) => void;
 }) {
   const circuitDiv = useRef<HTMLDivElement>(null);
@@ -61,7 +63,7 @@ function ZoomableCircuit(props: {
       const container = circuitDiv.current!;
       // Draw the circuit - may take a while for large circuits
       //const svg = renderCircuit(props.circuit, container, props.editCallback);
-      const svg = renderCircuit(props.circuit, container);
+      const svg = renderCircuit(props.circuit, container, props.isEditable);
       // Calculate the initial zoom level based on the container width
       const initialZoom = calculateZoomToFit(container, svg as SVGElement);
       // Set the initial zoom level
@@ -140,18 +142,21 @@ function ZoomableCircuit(props: {
   function renderCircuit(
     circuit: qviz.Circuit,
     container: HTMLDivElement,
+    isEditable: boolean,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     editCallback?: (circuit: qviz.Circuit) => void,
   ) {
-    // new CircuitDesigner(container, circuit);
+    if (isEditable) {
+      let temp = qviz.create(circuit).useDraggable().usePanel();
 
-    let temp = qviz.create(circuit).useDraggable().usePanel();
+      if (editCallback) {
+        temp = temp.useOnCircuitChange(editCallback);
+      }
 
-    if (editCallback) {
-      temp = temp.useOnCircuitChange(editCallback);
+      temp.useEvents().draw(container);
+    } else {
+      qviz.create(circuit).draw(container);
     }
-
-    temp.useEvents().draw(container);
 
     // quantum-viz hardcodes the styles in the SVG.
     // Remove the style elements -- we'll define the styles in our own CSS.
@@ -272,6 +277,7 @@ export function CircuitPanel(props: CircuitProps) {
       {props.circuit ? (
         <Circuit
           circuit={props.circuit}
+          isEditable={props.isEditable}
           editCallback={props.editCallback}
         ></Circuit>
       ) : null}

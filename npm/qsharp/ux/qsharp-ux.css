@@ -63,12 +63,7 @@ modern-normalize (see https://mattbrictson.com/blog/css-normalize-and-reset for 
 
 html {
   box-sizing: border-box;
-  overflow: hidden;
   font-size: 16px;
-}
-
-html.qs-circuit-html {
-  overflow: auto;
 }
 
 /* TODO: Make the below playground specific classes */

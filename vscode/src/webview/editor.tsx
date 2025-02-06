@@ -88,7 +88,6 @@ function main() {
   render(<App state={state} />, document.body);
   setThemeStylesheet();
   readFromTextDocument();
-  //vscodeApi.postMessage({ command: "ready" });
 }
 
 function onMessage(event: any) {
@@ -134,6 +133,7 @@ function App({ state }: { state: State }) {
       return (
         <CircuitPanel
           {...state.props}
+          isEditable={true}
           editCallback={updateTextDocument}
         ></CircuitPanel>
       );

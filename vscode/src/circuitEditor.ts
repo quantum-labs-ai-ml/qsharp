@@ -143,7 +143,7 @@ export class CircuitEditorProvider implements vscode.CustomTextEditorProvider {
     const resourcesUri = getUri(["resources"]);
     return `
       <!DOCTYPE html>
-      <html class="qs-circuit-html" lang="en">
+      <html lang="en">
         <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
