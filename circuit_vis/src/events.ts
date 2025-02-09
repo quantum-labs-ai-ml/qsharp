@@ -8,6 +8,7 @@ import { Sqore } from './sqore';
 import isEqual from 'lodash/isEqual';
 import { defaultGateDictionary, toMetadata } from './panel';
 import { _formatGate } from './formatters/gateFormatter';
+import { controlDot } from './formatters/formatUtils';
 
 const extensionEvents = (container: HTMLElement, sqore: Sqore, useRefresh: () => void): void => {
     const events = new CircuitEvents(container, sqore, useRefresh);
@@ -15,6 +16,7 @@ const extensionEvents = (container: HTMLElement, sqore: Sqore, useRefresh: () =>
     events._addContextMenuEvent();
     events._addDropzoneLayerEvents();
     events._addHostElementsEvents();
+    events._addGateElementsEvents();
     events._addToolboxElementsEvents();
     events._addDropzoneElementsEvents();
     events._addQubitLineControlEvents();
@@ -31,6 +33,7 @@ class CircuitEvents {
     private renderFn: () => void;
     private selectedOperation: Operation | null;
     private selectedWire: number | null;
+    private movingControl: boolean;
 
     constructor(container: HTMLElement, sqore: Sqore, useRefresh: () => void) {
         this.container = container;
@@ -42,6 +45,7 @@ class CircuitEvents {
         this.renderFn = useRefresh;
         this.selectedOperation = null;
         this.selectedWire = null;
+        this.movingControl = false;
     }
 
     /**
@@ -97,6 +101,7 @@ class CircuitEvents {
 
         document.addEventListener('mouseup', () => {
             this.container.classList.remove('moving', 'copying');
+            this.movingControl = false;
             if (this.container) {
                 const ghostElem = this.container.querySelector('.ghost');
                 if (ghostElem) {
@@ -122,15 +127,25 @@ class CircuitEvents {
         const elems = this._hostElems();
         elems.forEach((elem) => {
             elem.addEventListener('mousedown', () => {
+                if (elem.classList.contains('control-dot')) {
+                    this.movingControl = true;
+                }
                 const selectedWireStr = elem.getAttribute('data-wire');
                 this.selectedWire = selectedWireStr != null ? parseInt(selectedWireStr) : null;
             });
+        });
+    }
 
-            const gateElem = this._findGateElem(elem);
-            gateElem?.addEventListener('mousedown', (ev: MouseEvent) => {
+    /**
+     * Add events for circuit objects in the circuit
+     */
+    _addGateElementsEvents() {
+        const elems = this._gateElems();
+        elems.forEach((elem) => {
+            elem?.addEventListener('mousedown', (ev: MouseEvent) => {
                 ev.stopPropagation();
-                if (gateElem.getAttribute('data-expanded') !== 'true') {
-                    const selectedLocation = gateElem.getAttribute('data-location');
+                if (elem.getAttribute('data-expanded') !== 'true') {
+                    const selectedLocation = elem.getAttribute('data-location');
                     this.selectedOperation = this._findOperation(selectedLocation);
 
                     this.createGhostElement(ev);
@@ -151,8 +166,14 @@ class CircuitEvents {
     }
 
     createGhostElement(ev: MouseEvent) {
-        const ghostMetadata = toMetadata(this.selectedOperation!, 0, 0);
-        const ghost = _formatGate(ghostMetadata).cloneNode(true) as SVGElement;
+        const ghost = this.movingControl
+            ? controlDot(0, 0)
+            : (() => {
+                  const ghostMetadata = toMetadata(this.selectedOperation!, 0, 0);
+                  return _formatGate(ghostMetadata).cloneNode(true) as SVGElement;
+              })();
+
+        // const ghost = _formatGate(ghostMetadata).cloneNode(true) as SVGElement;
 
         // Generate svg element to wrap around ghost element
         const svgElem = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -176,13 +197,9 @@ class CircuitEvents {
                 divElem.style.top = `${ev.clientY + window.scrollY - ghostHeight / 2}px`;
             };
 
-            const handleMouseMove = (ev: MouseEvent) => {
-                updateDivLeftTop(ev);
-            };
-
             updateDivLeftTop(ev);
 
-            this.container.addEventListener('mousemove', handleMouseMove);
+            this.container.addEventListener('mousemove', updateDivLeftTop);
         } else {
             console.error('container not found');
         }
@@ -223,27 +240,41 @@ class CircuitEvents {
 
                 if (sourceLocation == null) {
                     // Add a new operation from the toolbox
-                    // const newOperation = this._addOperation(this.selectedOperation, targetLoc, targetWire);
                     this._addOperation(this.selectedOperation, targetLoc, targetWire);
+                    // const newOperation = this._addOperation(this.selectedOperation, targetLoc, targetWire);
                     // if (newOperation) {
                     //     this._moveY(targetWire, newOperation, this.wireData.length);
                     // }
                 } else if (sourceLocation && this.selectedWire != null) {
-                    const newOperation = ev.ctrlKey
-                        ? this._addOperation(this.selectedOperation, targetLoc, targetWire)
-                        : this._moveX(sourceLocation, targetLoc, targetWire);
-
-                    if (newOperation) {
-                        this._moveY(targetWire - this.selectedWire, newOperation, this.wireData.length);
-                        const parentOperation = this._findParentOperation(sourceLocation);
-                        if (parentOperation) {
-                            parentOperation.targets = this._targets(parentOperation);
+                    if (ev.ctrlKey) {
+                        this._addOperation(this.selectedOperation, targetLoc, targetWire);
+                    } else {
+                        const newOperation = this._moveX(sourceLocation, targetLoc, targetWire);
+                        if (newOperation) {
+                            if (!newOperation.isMeasurement) {
+                                if (this.movingControl) {
+                                    newOperation.controls?.forEach((control) => {
+                                        if (control.qId === this.selectedWire) {
+                                            control.qId = targetWire;
+                                        }
+                                    });
+                                    newOperation.controls = newOperation.controls?.sort((a, b) => a.qId - b.qId);
+                                } else {
+                                    newOperation.targets = [{ qId: targetWire, type: 0 }];
+                                }
+                            }
+                            //this._moveY(targetWire - this.selectedWire, newOperation, this.wireData.length);
+                            const parentOperation = this._findParentOperation(sourceLocation);
+                            if (parentOperation) {
+                                parentOperation.targets = this._targets(parentOperation);
+                            }
                         }
                     }
                 }
 
                 this.selectedWire = null;
                 this.selectedOperation = null;
+                this.movingControl = false;
 
                 if (isEqual(originalOperations, this.operations) === false) this.renderFn();
             });
@@ -509,6 +540,7 @@ class CircuitEvents {
     /**
      * Move an operation vertically by changing its controls and targets
      */
+    // ToDo: this should be repurposed to move a multi-target operation to a different wire
     _moveY = (targetWire: number, operation: Operation, totalWires: number): Operation => {
         if (!operation.isMeasurement) {
             this._offsetRecursively(operation, targetWire, totalWires);
@@ -544,6 +576,13 @@ class CircuitEvents {
                 '[class^="gate-"]:not(.gate-control, .gate-swap), .control-dot, .oplus, .cross',
             ),
         );
+    }
+
+    /**
+     * Get list of gate elements from the circuit, but not the toolbox
+     */
+    _gateElems(): SVGGraphicsElement[] {
+        return Array.from(this.circuitSvg.querySelectorAll<SVGGraphicsElement>('.gate'));
     }
 
     /**
