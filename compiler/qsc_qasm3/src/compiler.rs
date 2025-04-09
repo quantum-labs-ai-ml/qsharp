@@ -37,7 +37,7 @@ use crate::{
             BinaryOpExpr, Cast, DiscreteSet, Expr, GateOperand, GateOperandKind, IndexElement,
             IndexExpr, IndexSet, IndexedIdent, LiteralKind, MeasureExpr, TimeUnit, UnaryOpExpr,
         },
-        symbols::{IOKind, Symbol, SymbolId, SymbolTable},
+        symbols::{is_std_gate, IOKind, Symbol, SymbolId, SymbolTable},
         types::{promote_types, ArrayDimensions, Type},
         SemanticErrorKind,
     },
@@ -905,6 +905,11 @@ impl QasmCompiler {
     ) -> Option<qsast::Stmt> {
         let symbol = self.symbols[stmt.symbol_id].clone();
         let name = symbol.name.clone();
+
+        // We want to avoid declaring anything in the stdgate libraries
+        if is_std_gate(&name) {
+            return None;
+        }
 
         let cargs: Vec<_> = stmt
             .params
